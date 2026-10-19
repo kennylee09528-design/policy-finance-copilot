@@ -1,0 +1,16 @@
+# 非 Docker 部署：systemd 单元。复制到 /etc/systemd/system/ 后：
+#   systemctl daemon-reload && systemctl enable --now puhui-workbench
+[Unit]
+Description=普惠业务工作台 (FastAPI)
+After=network.target
+
+[Service]
+User=puhui
+WorkingDirectory=/opt/puhui-workbench
+Environment=PH_DATA_DIR=/opt/puhui-workbench/data
+ExecStart=/opt/puhui-workbench/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --proxy-headers
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

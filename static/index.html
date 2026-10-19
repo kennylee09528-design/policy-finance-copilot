@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>普惠业务工作台 · 示例再担保公司</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22><rect rx=%2214%22 width=%2264%22 height=%2264%22 fill=%22%23b0242e%22/><path d=%22M18 44V20h8v24M34 44V24h12v20M14 48h36%22 stroke=%22%23f5d39b%22 stroke-width=%225%22 fill=%22none%22/></svg>">
+<link rel="stylesheet" href="/static/css/base.css"/>
+<script src="/static/vendor/echarts.min.js"></script>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark">普</div><div><strong>普惠业务工作台</strong><span>示例再担保公司 · 再担保业务条线</span></div></div>
+    <nav id="nav">
+      <button class="nav-item" data-page="home"><span>▦</span>工作台</button>
+      <div class="nav-label">知识与写作</div>
+      <button class="nav-item" data-page="m1" data-internal="1"><span>▤</span>财金协同知识库（M1）</button>
+      <button class="nav-item" data-page="m2"><span>⌁</span>今日行业 Brief（M2）</button>
+      <button class="nav-item" data-page="m3" data-internal="1"><span>✦</span>行业研究院（M3）</button>
+      <button class="nav-item" data-page="ppt" data-internal="1"><span>▣</span>PPT 生成</button>
+      <div class="nav-label">机构管理</div>
+      <button class="nav-item" data-page="m4" data-internal="1"><span>◈</span>机构授信管理（M4）</button>
+      <button class="nav-item" data-page="m5"><span>▧</span>机构看板（M5）</button>
+      <button class="nav-item" data-page="selftest"><span>✎</span>单机构自测</button>
+      <div class="nav-label">平台</div>
+      <button class="nav-item" data-page="admin" data-internal="1"><span>⚙</span>系统管理</button>
+      <button class="nav-item" data-page="audit" data-internal="1"><span>☰</span>操作留痕</button>
+    </nav>
+    <div class="side-foot"><div class="avatar">粤</div><div><strong id="meName">演示用户</strong><span id="meRole">普惠部（内部）</span></div></div>
+  </aside>
+  <main>
+    <header class="topbar">
+      <div class="breadcrumb"><span>普惠业务工作台</span><b>/</b><strong id="pageName">工作台</strong></div>
+      <div class="top-actions">
+        <span class="demo-badge">● 内部资料 · 注意保密 · 金额单位：万元</span>
+        <span class="user-switch small" id="userBox"></span>
+      </div>
+    </header>
+    <div id="view"></div>
+    <footer>普惠业务工作台 · 一期（五大模块均可用；财金协同知识库、今日行业 Brief、行业研究院需在系统管理中配置大模型与联网搜索） · 数据来源：附件2计算表、国担系统导出台账</footer>
+  </main>
+</div>
+<div class="modal-mask" id="modal"><div class="modal"><div class="modal-h"><h3 id="modalT"></h3><button class="mclose" onclick="closeModal()">×</button></div><div class="modal-b" id="modalB"></div></div></div>
+<div class="login-mask hidden" id="loginMask"><div class="login-card" id="loginCard"></div></div>
+<div class="toast" id="toast"></div>
+<script src="/static/js/app.js"></script>
+<script src="/static/js/m4.js"></script>
+<script src="/static/js/m5.js"></script>
+<script src="/static/js/admin.js"></script>
+<script src="/static/js/m2m3.js"></script>
+<script src="/static/js/ppt.js"></script>
+<script src="/static/js/mail.js"></script>
+<script src="/static/js/feishu.js"></script>
+<script src="/static/js/wechat.js"></script>
+<script src="/static/js/labels.js"></script>
+</body>
+</html>

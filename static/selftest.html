@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>单机构授信系数自测 · 示例再担保公司</title>
+<link rel="stylesheet" href="/static/css/base.css"/>
+<style>body{background:#f4f5f7}.wrap{max-width:980px;margin:24px auto;padding:0 16px}.res td{padding:6px 10px}</style>
+</head><body><div class="wrap">
+<div class="page-head"><div><h1>单机构授信系数自测</h1><p>合作担保机构填写本机构数据，即时测算各项系数与初步调整后额度。页面不显示、不提供任何其他机构信息。</p></div></div>
+<div id="pool" class="note-box mb"></div>
+<div class="panel panel-b mb">
+  <div class="form-row">
+    <label>2025年担保规模（万元）<input class="in" id="scale" type="number" step="any"></label>
+    <label>就业人数（人）<input class="in" id="emp" type="number" step="any"></label>
+    <label>支小支农占比（%）<input class="in" id="zxzn" type="number" step="any"></label>
+    <label>近3年累计代偿率（%）<input class="in" id="lj" type="number" step="any"></label>
+  </div>
+  <div class="form-row">
+    <label>2025年担保代偿率（%）<input class="in" id="dn" type="number" step="any"></label>
+    <label>2025年机构评价分<input class="in" id="pj" type="number" step="any"></label>
+    <label>注册资本（万元，可选）<input class="in" id="zc" type="number" step="any"></label>
+    <label>2025年民投金额（万元，可选）<input class="in" id="mintou" type="number" step="any"></label>
+  </div>
+  <button class="primary" id="go">测算</button>
+</div>
+<div id="out"></div>
+<p class="small">说明：系数口径与年度授信测算一致（权重、全省均值取自当前测算方案）；结果仅供自测参考，最终授信额度以我司批复为准。</p>
+</div>
+<script>
+const $=s=>document.querySelector(s);const f4=v=>v==null?'—':Number(v).toFixed(4);const f2=v=>v==null?'—':Number(v).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2});
+fetch('/api/selftest/pool').then(r=>r.json()).then(p=>{
+  $('#pool').innerHTML=p.available?`当前测算口径：参与模型测算机构 ${p.pool_count} 家；权重 ${Object.entries(p.weights).map(([k,w])=>({L:'就业贡献',N:'支小支农',P:'累计代偿',R:'当年代偿',T:'机构评价'}[k]||k)+' '+(w*100)+'%').join('，')}。`:'尚未发布测算方案，暂不能自测。';
+});
+$('#go').onclick=async()=>{
+  const pc=id=>$(id).value===''?null:Number($(id).value), n=id=>$(id).value===''?null:Number($(id).value);
+  const body={scale:n('#scale'),emp:n('#emp'),zxzn:pc('#zxzn'),lj:pc('#lj'),dn:pc('#dn'),pj:n('#pj'),zc:n('#zc'),mintou:n('#mintou')};
+  const r=await fetch('/api/selftest/calc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const j=await r.json();
+  if(!r.ok){$('#out').innerHTML=`<div class="alert error">${j.detail}</div>`;return;}
+  const L=[['J','规模系数'],['K','就业贡献指标'],['L','就业系数'],['N','支小支农系数'],['P','累计代偿系数'],['R','当年代偿系数'],['T','评价系数'],['U','总系数']];
+  $('#out').innerHTML=`<div class="panel panel-b mb"><h2 class="mb">测算结果</h2><table class="grid res"><tbody>
+  ${L.map(([k,l])=>`<tr><td>${l}</td><td class="n">${k==='K'?f2(j[k]):f4(j[k])}</td></tr>`).join('')}
+  <tr class="tot"><td>初步调整后额度（万元）</td><td class="n">${f2(j.W)}</td></tr></tbody></table>
+  <p class="small" style="margin-top:8px">${j.note}</p></div>`;
+};
+</script></body></html>

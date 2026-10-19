@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>融研智助 · 融资担保业务智能辅助平台</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22><rect rx=%2214%22 width=%2264%22 height=%2264%22 fill=%22%230b2851%22/><path d=%22M16 42V22h10v20M37 42V14h11v28M12 46h40%22 stroke=%22%2326c6b5%22 stroke-width=%225%22 fill=%22none%22/></svg>">
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="models.css" />
+  <link rel="stylesheet" href="agents.css" />
+  <link rel="stylesheet" href="blueprint.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><div class="brand-mark">融</div><div><strong>融研智助</strong><span>业务智能辅助平台</span></div></div>
+      <nav id="nav">
+        <button class="nav-item active" data-view="dashboard"><span>▦</span>工作台</button>
+        <div class="nav-label">宏观政策研究</div>
+        <button class="nav-item" data-view="policy"><span>⌁</span>政策研究助手</button>
+        <button class="nav-item" data-view="library"><span>▤</span>政策知识库</button>
+        <div class="nav-label">客户辅助尽调</div>
+        <button class="nav-item" data-view="customers"><span>◎</span>客户管理</button>
+        <button class="nav-item" data-view="diligence"><span>✓</span>辅助尽调工作台</button>
+        <div class="nav-label">智能协作</div>
+        <button class="nav-item" data-view="agents"><span>⌘</span>Agent 协作中心</button>
+        <div class="nav-label">平台管理</div>
+        <button class="nav-item" data-view="blueprint"><span>▧</span>建设方案</button>
+        <button class="nav-item" data-view="skills"><span>◇</span>Skill 管理</button>
+        <button class="nav-item" data-view="models"><span>⚙</span>大模型配置</button>
+      </nav>
+      <div class="side-foot"><div class="avatar">SX</div><div><strong>孙老师</strong><span>业务部门 · 演示账号</span></div><button>•••</button></div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <button class="menu" id="menu">☰</button>
+        <div class="breadcrumb"><span>融资担保业务</span><b>/</b><strong id="pageName">工作台</strong></div>
+        <div class="top-actions"><span class="demo-badge">● 演示环境 · 数据均为虚构</span><button class="icon-btn" title="通知">♢<i></i></button><button class="help">?</button></div>
+      </header>
+
+      <section class="view active" id="dashboard">
+        <div class="page-head"><div><h1>上午好，孙老师</h1><p>这里汇总政策研究与客户辅助尽调的最新进展。</p></div><button class="primary" data-go="policy">＋ 发起智能任务</button></div>
+        <div class="metric-grid">
+          <article class="metric"><div class="metric-icon blue">政</div><div><span>本周政策更新</span><strong>28</strong><small>较上周 +12%</small></div></article>
+          <article class="metric"><div class="metric-icon cyan">研</div><div><span>进行中的研究</span><strong>3</strong><small>1 项待补充材料</small></div></article>
+          <article class="metric"><div class="metric-icon amber">客</div><div><span>重点跟进客户</span><strong>12</strong><small>本月新增 4 户</small></div></article>
+          <article class="metric"><div class="metric-icon red">险</div><div><span>待核实风险线索</span><strong>7</strong><small>不等同于风险结论</small></div></article>
+        </div>
+        <div class="dashboard-grid">
+          <article class="panel wide"><div class="panel-head"><div><h2>我的任务</h2><p>近期研究与尽调事项</p></div><button class="text-btn">查看全部 →</button></div>
+            <div class="task-tabs"><button class="active">全部 6</button><button>政策研究 3</button><button>客户尽调 3</button></div>
+            <div class="task-list">
+              <div class="task-row"><span class="type policy-type">政策</span><div><strong>东川市制造业扶持政策专题研究</strong><small>更新于 10 分钟前 · 已引用 12 份政策文件</small></div><em class="status done">已完成</em><button data-go="policy">查看</button></div>
+              <div class="task-row"><span class="type client-type">客户</span><div><strong>华北智造装备有限公司辅助尽调</strong><small>更新于 35 分钟前 · 发现 3 项待核实线索</small></div><em class="status review">待复核</em><button data-go="diligence">查看</button></div>
+              <div class="task-row"><span class="type policy-type">政策</span><div><strong>临江市政府债务与财政承压分析</strong><small>昨天 16:20 · 正在整理公开数据</small></div><em class="status running">进行中</em><button>查看</button></div>
+              <div class="task-row"><span class="type client-type">客户</span><div><strong>新源食品科技有限公司资料清单核验</strong><small>昨天 11:05 · 缺少两项核心材料</small></div><em class="status pending">待补充</em><button>查看</button></div>
+            </div>
+          </article>
+          <article class="panel"><div class="panel-head"><div><h2>政策动态</h2><p>与本机构业务相关</p></div><button class="text-btn">政策库 →</button></div>
+            <div class="news-list"><div><span>国家级</span><strong>关于促进专精特新中小企业高质量发展的指导意见</strong><small>工信部门 · 今天</small></div><div><span>省级</span><strong>省级融资担保体系建设专项资金管理办法</strong><small>财政部门 · 昨天</small></div><div><span>地市级</span><strong>东川市先进制造业集群培育行动方案</strong><small>东川市政府 · 3 天前</small></div></div>
+          </article>
+          <article class="panel"><div class="panel-head"><div><h2>快捷入口</h2><p>常用业务工具</p></div></div><div class="quick-grid"><button data-go="policy"><b>⌁</b><span>政策研究</span></button><button data-go="customers"><b>◎</b><span>新建客户</span></button><button data-go="diligence"><b>✓</b><span>发起尽调</span></button><button data-go="skills"><b>◇</b><span>Skill 配置</span></button></div></article>
+        </div>
+      </section>
+
+      <section class="view" id="policy">
+        <div class="page-head"><div><h1>宏观政策分析研究助手</h1><p>面向地市财政金融、产业政策研究，自动形成有出处、可复核的研究初稿。</p></div><div class="page-actions"><label class="model-picker"><span>使用模型</span><select class="module-model" data-module="政策研究助手"><option>通义千问 Qwen-Max</option><option>DeepSeek-V3</option><option>腾讯混元-T1</option><option>智谱 GLM-4.5</option></select></label><button class="secondary">历史研究</button></div></div>
+        <div class="research-layout">
+          <article class="panel research-form"><div class="section-title"><span>1</span><div><h2>设置研究任务</h2><p>选择范围并描述业务关注重点</p></div></div>
+            <label>研究主题<textarea id="researchTopic">东川市制造业扶持政策及融资担保业务机会分析</textarea></label>
+            <div class="form-row"><label>研究区域<select><option>东川市（演示地区）</option><option>临江市（演示地区）</option></select></label><label>时间范围<select><option>近 3 年</option><option>近 1 年</option><option>近 5 年</option></select></label></div>
+            <label>政策类型<div class="chips"><button class="selected">产业政策</button><button class="selected">财政政策</button><button>金融政策</button><button>融资担保</button></div></label>
+            <label>重点关注<div class="check-list"><label><input type="checkbox" checked> 财政承受能力</label><label><input type="checkbox" checked> 重点产业与企业名单</label><label><input type="checkbox" checked> 担保业务切入机会</label><label><input type="checkbox"> 同类地区对比</label></div></label>
+            <button class="primary full" id="startResearch">✦ 开始智能研究</button><p class="form-note">AI 生成内容仅供研究参考，正式使用前须由业务人员核验。</p>
+          </article>
+          <article class="panel result-panel" id="researchResult">
+            <div class="empty-state" id="researchEmpty"><div class="orb">⌁</div><h2>研究结果将在这里生成</h2><p>点击“开始智能研究”，体验从资料检索到报告初稿的完整流程。</p><div class="flow"><span>资料检索</span>→<span>来源核验</span>→<span>交叉分析</span>→<span>报告生成</span></div></div>
+            <div class="loading-state hidden" id="researchLoading"><div class="ai-loader"><span></span><span></span><span></span></div><h2 id="loadingText">正在检索公开政策资料…</h2><div class="progress"><i id="progressBar"></i></div><p>正在调用：政策检索、财政分析、产业链分析等 Skills</p></div>
+            <div class="report hidden" id="report"><div class="report-toolbar"><div><span class="complete-dot">✓</span><b>研究报告初稿已生成</b><small>共引用 12 个公开来源</small></div><div><button class="secondary" id="sourceBtn">来源清单</button><button class="primary" id="exportReport">导出报告</button></div></div>
+              <div class="report-body"><div class="report-cover"><span>政策专题研究 · 演示稿</span><h2>东川市制造业扶持政策及<br>融资担保业务机会分析</h2><p>生成时间：2026年9月18日　研究范围：近三年</p></div>
+                <div class="insight-grid"><div><span>政策支持强度</span><b>较强</b><small>产业链培育政策连续</small></div><div><span>财政承压程度</span><b>中等</b><small>需关注土地相关收入变化</small></div><div><span>业务机会方向</span><b>3 类</b><small>技改、园区、供应链</small></div></div>
+                <h3>一、核心研判</h3><p>东川市近三年政策重点由“单体项目补贴”逐步转向“产业链协同与技术改造”。公开文件显示，高端装备、新材料和绿色食品为重点培育方向。对融资担保机构而言，园区内技改项目、专精特新企业流动资金以及核心企业上游供应商可能形成业务机会。<sup>[1][3][7]</sup></p>
+                <div class="callout"><b>业务提示</b><p>建议优先建立“重点产业政策—园区—企业名单”映射，再结合企业纳税、订单与回款情况进行客户筛选。政策支持不等同于偿债能力，不应作为单独授信依据。</p></div>
+                <h3>二、重点政策脉络</h3><div class="timeline"><div><b>2024</b><span><strong>制造业技改专项启动</strong><small>重点支持生产线数字化和节能改造</small></span></div><div><b>2025</b><span><strong>产业链“链主+专精特新”培育</strong><small>支持上下游协同与供应链融资</small></span></div><div><b>2026</b><span><strong>产业基金与担保联动机制</strong><small>鼓励政策性融资担保提供增信服务</small></span></div></div>
+                <h3>三、建议的业务切入点</h3><table><thead><tr><th>方向</th><th>目标客户</th><th>核验重点</th><th>初步优先级</th></tr></thead><tbody><tr><td>设备技改担保</td><td>园区规上制造企业</td><td>项目资本金、设备订单、补贴兑现</td><td><span class="tag green">高</span></td></tr><tr><td>供应链担保</td><td>核心企业上游供应商</td><td>贸易真实性、回款路径、集中度</td><td><span class="tag blue">中高</span></td></tr><tr><td>科创企业担保</td><td>专精特新企业</td><td>研发投入、订单转化、知识产权</td><td><span class="tag amber">中</span></td></tr></tbody></table>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="view" id="library">
+        <div class="page-head"><div><h1>政策知识库</h1><p>统一沉淀政策文件、研究报告和来源依据。</p></div><div class="page-actions"><label class="model-picker"><span>使用模型</span><select class="module-model" data-module="政策知识库"><option>通义千问 Qwen-Plus</option><option>DeepSeek-V3</option><option>腾讯混元-T1</option></select></label><button class="primary" id="uploadPolicy">＋ 录入政策</button></div></div>
+        <article class="panel"><div class="filterbar"><div class="search"><span>⌕</span><input id="policySearch" placeholder="搜索政策名称、发布部门、关键词"></div><select><option>全部层级</option><option>国家级</option><option>省级</option><option>地市级</option></select><select><option>全部类型</option><option>产业政策</option><option>财政政策</option><option>融资担保</option></select></div>
+          <div class="data-table"><table><thead><tr><th>政策名称</th><th>层级 / 地区</th><th>发布部门</th><th>发布日期</th><th>关联标签</th><th>状态</th></tr></thead><tbody id="policyTable"><tr><td><strong>先进制造业集群培育行动方案</strong><small>示例编号：DC-2026-18</small></td><td>地市级 · 东川市</td><td>市工业和信息化局</td><td>2026-08-12</td><td><span class="tag blue">先进制造</span> <span class="tag green">技改</span></td><td><span class="status done">已核验</span></td></tr><tr><td><strong>政府性融资担保机构尽职免责工作指引</strong><small>示例编号：SF-2026-06</small></td><td>省级 · 示例省</td><td>省财政厅</td><td>2026-06-20</td><td><span class="tag amber">融资担保</span></td><td><span class="status done">已核验</span></td></tr><tr><td><strong>专精特新中小企业梯度培育办法</strong><small>示例编号：GX-2025-31</small></td><td>国家级</td><td>工业和信息化部门</td><td>2025-12-01</td><td><span class="tag blue">专精特新</span></td><td><span class="status review">待复核</span></td></tr><tr><td><strong>产业发展专项资金管理办法</strong><small>示例编号：DC-2025-09</small></td><td>地市级 · 东川市</td><td>市财政局</td><td>2025-09-08</td><td><span class="tag green">专项资金</span></td><td><span class="status done">已核验</span></td></tr></tbody></table></div>
+        </article>
+      </section>
+
+      <section class="view" id="customers">
+        <div class="page-head"><div><h1>客户管理</h1><p>集中管理客户开发线索、基础信息及尽调进度。</p></div><div class="page-actions"><label class="model-picker"><span>使用模型</span><select class="module-model" data-module="客户管理"><option>通义千问 Qwen-Plus</option><option>DeepSeek-V3</option><option>腾讯混元-T1</option></select></label><button class="primary" id="newCustomer">＋ 新建客户</button></div></div>
+        <div class="metric-grid compact"><article class="mini"><span>全部客户</span><strong>36</strong></article><article class="mini"><span>重点跟进</span><strong>12</strong></article><article class="mini"><span>辅助尽调中</span><strong>5</strong></article><article class="mini"><span>待补充材料</span><strong>7</strong></article></div>
+        <article class="panel"><div class="filterbar"><div class="search"><span>⌕</span><input id="customerSearch" placeholder="搜索企业名称、统一社会信用代码"></div><select><option>全部行业</option><option>装备制造</option><option>食品加工</option><option>新能源</option></select><select><option>全部状态</option><option>重点跟进</option><option>尽调中</option></select></div>
+          <div class="customer-list" id="customerList">
+            <div class="customer-card" data-name="华北智造装备有限公司"><div class="company-logo">华</div><div class="company-main"><div><h3>华北智造装备有限公司 <span class="tag amber">重点跟进</span></h3><p>高端装备制造 · 东川市高新区 · 成立 9 年</p></div><div class="company-stats"><span>拟申请金额<b>2,000 万元</b></span><span>客户经理<b>孙老师</b></span><span>尽调进度<b>资料初审</b></span></div></div><button class="secondary open-diligence">进入尽调 →</button></div>
+            <div class="customer-card" data-name="新源食品科技有限公司"><div class="company-logo green-bg">新</div><div class="company-main"><div><h3>新源食品科技有限公司 <span class="tag blue">尽调中</span></h3><p>食品加工 · 临江市产业园 · 成立 6 年</p></div><div class="company-stats"><span>拟申请金额<b>800 万元</b></span><span>客户经理<b>李经理</b></span><span>尽调进度<b>待补材料</b></span></div></div><button class="secondary open-diligence">进入尽调 →</button></div>
+            <div class="customer-card" data-name="绿川新能源材料有限公司"><div class="company-logo purple-bg">绿</div><div class="company-main"><div><h3>绿川新能源材料有限公司 <span class="tag green">初步接触</span></h3><p>新能源材料 · 东川市经开区 · 成立 4 年</p></div><div class="company-stats"><span>拟申请金额<b>1,500 万元</b></span><span>客户经理<b>王经理</b></span><span>尽调进度<b>尚未开始</b></span></div></div><button class="secondary open-diligence">进入尽调 →</button></div>
+          </div>
+        </article>
+      </section>
+
+      <section class="view" id="diligence">
+        <div class="customer-header"><div class="company-logo large">华</div><div><div class="eyebrow">客户辅助尽调 · 演示案例</div><h1>华北智造装备有限公司</h1><p>高端装备制造 · 东川市高新区 · 客户经理：孙老师</p></div><div class="customer-actions"><label class="model-picker"><span>使用模型</span><select class="module-model" data-module="辅助尽调工作台"><option>DeepSeek-V3</option><option>通义千问 Qwen-Max</option><option>腾讯混元-T1</option><option>智谱 GLM-4.5</option></select></label><button class="secondary" id="materialsBtn">资料清单</button><button class="primary" id="generateSummary">生成访谈提纲</button></div></div>
+        <div class="stepper"><div class="done"><b>✓</b><span>客户建档<small>已完成</small></span></div><i></i><div class="done"><b>✓</b><span>资料收集<small>已上传 16 项</small></span></div><i></i><div class="active"><b>3</b><span>辅助分析<small>待人工复核</small></span></div><i></i><div><b>4</b><span>补充核验<small>未开始</small></span></div><i></i><div><b>5</b><span>形成尽调材料<small>未开始</small></span></div></div>
+        <div class="diligence-grid">
+          <article class="panel summary-card"><div class="panel-head"><div><h2>客户画像摘要</h2><p>基于已上传资料与公开信息形成</p></div><span class="updated">刚刚更新</span></div><div class="profile-grid"><div><span>成立时间</span><b>2017 年 3 月</b></div><div><span>注册资本</span><b>5,000 万元</b></div><div><span>员工人数</span><b>约 186 人</b></div><div><span>拟申请金额</span><b>2,000 万元</b></div><div><span>主营业务</span><b>工业自动化装备</b></div><div><span>主要用途</span><b>采购原材料</b></div></div><div class="business-desc"><b>AI 业务理解</b><p>企业主要为汽车零部件厂商提供非标自动化生产线，项目制特征明显，收入确认和回款受验收节点影响。近两年订单规模增长，但客户集中度较高。</p></div></article>
+          <article class="panel score-card"><div class="panel-head"><div><h2>资料完整度</h2><p>不代表风险评分</p></div></div><div class="score-ring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40"></circle><circle class="fill" cx="50" cy="50" r="40"></circle></svg><div><b>78</b><span>%</span></div></div><div class="score-legend"><span><i class="green-dot"></i>已收到 16 项</span><span><i class="amber-dot"></i>待补充 4 项</span></div><button class="secondary full" id="materialsDetail">查看缺失资料</button></article>
+          <article class="panel risk-panel"><div class="panel-head"><div><h2>待核实事项</h2><p>AI 提取的线索，须由业务人员确认，不构成风险结论</p></div><button class="text-btn" id="addRisk">＋ 添加人工事项</button></div>
+            <div class="risk-list">
+              <div class="risk-item"><div class="risk-level high">高关注</div><div class="risk-content"><h3>前五大客户销售占比较高</h3><p>2025 年前五大客户销售占比约 67%，其中第一大客户占比 29%。需核实合作稳定性与替代订单情况。</p><div class="evidence"><span>证据来源</span><button>2025年审计报告 · 第18页</button><button>销售明细表</button></div></div><div class="risk-actions"><button class="verify">标记已核实</button><button class="ignore">信息有误</button></div></div>
+              <div class="risk-item"><div class="risk-level mid">中关注</div><div class="risk-content"><h3>经营性现金流与利润变动不一致</h3><p>2025 年净利润增长 18%，经营活动现金流净额同比下降 22%，主要差异可能来自应收账款增加。</p><div class="evidence"><span>证据来源</span><button>财务报表分析</button><button>应收账款账龄表</button></div></div><div class="risk-actions"><button class="verify">标记已核实</button><button class="ignore">信息有误</button></div></div>
+              <div class="risk-item"><div class="risk-level low">一般关注</div><div class="risk-content"><h3>厂房租赁将于 18 个月后到期</h3><p>现有租赁合同剩余期限短于拟申请担保期限，需了解续租安排及搬迁影响。</p><div class="evidence"><span>证据来源</span><button>厂房租赁合同 · 第2页</button></div></div><div class="risk-actions"><button class="verify">标记已核实</button><button class="ignore">信息有误</button></div></div>
+            </div>
+          </article>
+          <article class="panel question-panel"><div class="panel-head"><div><h2>建议补充核验问题</h2><p>可直接用于客户访谈或资料补充</p></div><button class="text-btn" id="copyQuestions">复制全部</button></div><ol><li><span>客户集中度</span>请说明第一大客户近三年的交易金额、合同期限及目前在手订单情况。</li><li><span>回款情况</span>2025 年应收账款增长的主要客户及原因是什么？期后回款情况如何？</li><li><span>资金用途</span>本次 2,000 万元资金的采购清单、付款节点及对应销售订单是什么？</li><li><span>反担保措施</span>现有可用于反担保的资产、权利及其权属限制情况。</li></ol><button class="secondary full" id="moreQuestions">基于新材料重新生成</button></article>
+        </div>
+      </section>
+
+      <section class="view" id="skills">
+        <div class="page-head"><div><h1>Skill 管理</h1><p>将业务经验拆解为可配置、可复用、可追溯的智能能力。</p></div><div class="page-actions"><label class="model-picker"><span>调试模型</span><select class="module-model" data-module="Skill 管理"><option>通义千问 Qwen-Plus</option><option>DeepSeek-V3</option><option>腾讯混元-T1</option></select></label><button class="primary" id="newSkill">＋ 新建 Skill</button></div></div>
+        <div class="skill-overview"><div><span>已配置 Skill</span><strong>52</strong><small>其中 11 个已启用</small></div><div><span>政策研究类</span><strong>18</strong><small>检索、分析、报告</small></div><div><span>客户尽调类</span><strong>27</strong><small>工商、财务、风险线索</small></div><div><span>通用能力类</span><strong>7</strong><small>文档、表格、引用核验</small></div></div>
+        <article class="panel"><div class="filterbar"><div class="search"><span>⌕</span><input id="skillSearch" placeholder="搜索 Skill 名称或说明"></div><select><option>全部模块</option><option>政策研究</option><option>客户尽调</option><option>通用</option></select></div>
+          <div class="skill-table"><table><thead><tr><th>Skill 名称</th><th>所属模块</th><th>功能说明</th><th>版本</th><th>状态</th><th>操作</th></tr></thead><tbody id="skillTable"><tr><td><strong>政策文件检索与筛选</strong><small>policy-research</small></td><td>政策研究</td><td>按地区、时间和政策类型检索并筛选公开政策</td><td>v1.2</td><td><label class="switch"><input type="checkbox" checked><span></span></label></td><td><button class="text-btn edit-skill">编辑</button></td></tr><tr><td><strong>地市财政状况分析</strong><small>fiscal-analysis</small></td><td>政策研究</td><td>梳理财政收入、支出、债务及趋势，标注数据来源</td><td>v1.0</td><td><label class="switch"><input type="checkbox" checked><span></span></label></td><td><button class="text-btn edit-skill">编辑</button></td></tr><tr><td><strong>企业基础画像</strong><small>company-profile</small></td><td>客户尽调</td><td>整合工商、业务、股权及主要经营信息</td><td>v1.3</td><td><label class="switch"><input type="checkbox" checked><span></span></label></td><td><button class="text-btn edit-skill">编辑</button></td></tr><tr><td><strong>财务异常线索识别</strong><small>financial-redflags</small></td><td>客户尽调</td><td>识别报表勾稽、趋势和现金流异常，仅输出核验线索</td><td>v0.9</td><td><label class="switch"><input type="checkbox"><span></span></label></td><td><button class="text-btn edit-skill">编辑</button></td></tr><tr><td><strong>尽调访谈问题生成</strong><small>interview-questions</small></td><td>客户尽调</td><td>依据客户资料和待核实事项生成访谈提纲</td><td>v1.1</td><td><label class="switch"><input type="checkbox" checked><span></span></label></td><td><button class="text-btn edit-skill">编辑</button></td></tr></tbody></table></div>
+        </article>
+      </section>
+
+      <section class="view" id="agents">
+        <div class="page-head"><div><h1>Agent 协作中心</h1><p>由总协调 Agent 拆解任务，专业 Agent 并行分析，证据核验后交由人工确认。<span class="platform-chip">运行底座 AgentScope 2.0</span></p></div><div class="page-actions"><label class="model-picker"><span>协调模型</span><select class="module-model" data-module="Agent 协作中心"><option>通义千问 Qwen-Max</option><option>DeepSeek-V3</option><option>腾讯混元-T1</option></select></label><button class="primary" id="startAgents">▶ 启动多 Agent 协作</button></div></div>
+
+        <div class="agent-scenario-bar"><div class="scenario-tabs"><button class="active" data-scenario="policy-agent">宏观政策研究</button><button data-scenario="customer-agent">客户辅助尽调</button></div><div class="run-meta"><span><i></i>协作环境就绪</span><b id="agentTimer">00:00</b><button id="resetAgents">重置演示</button></div></div>
+
+        <div class="agent-layout">
+          <article class="panel agent-canvas">
+            <div class="agent-canvas-head"><div><span class="eyebrow">当前任务</span><h2 id="agentTaskTitle">东川市制造业政策与融资担保业务机会研究</h2></div><span class="agent-run-status idle" id="agentRunStatus">等待启动</span></div>
+            <div class="orchestrator-card agent-node" data-agent="coordinator"><div class="agent-symbol">总</div><div><h3>总协调 Agent</h3><p>理解任务 · 拆分步骤 · 调度与汇总</p></div><span class="node-state">待命</span></div>
+            <div class="connector-line"><i></i><span>任务分派</span></div>
+            <div class="agent-team" id="policyAgentTeam">
+              <div class="agent-node" data-agent="search"><div class="agent-symbol blue-symbol">检</div><div><h3>政策检索 Agent</h3><p>政策检索与时效筛选</p><small>模型：Qwen-Plus · 4 Skills</small></div><span class="node-state">待命</span></div>
+              <div class="agent-node" data-agent="fiscal"><div class="agent-symbol cyan-symbol">财</div><div><h3>财政分析 Agent</h3><p>财政收支与债务趋势</p><small>模型：DeepSeek-V3 · 3 Skills</small></div><span class="node-state">待命</span></div>
+              <div class="agent-node" data-agent="industry"><div class="agent-symbol purple-symbol">产</div><div><h3>产业研究 Agent</h3><p>产业链与园区机会识别</p><small>模型：Qwen-Max · 5 Skills</small></div><span class="node-state">待命</span></div>
+            </div>
+            <div class="agent-team hidden" id="customerAgentTeam">
+              <div class="agent-node" data-agent="profile"><div class="agent-symbol blue-symbol">企</div><div><h3>客户画像 Agent</h3><p>工商、股权与经营信息</p><small>模型：Qwen-Plus · 6 Skills</small></div><span class="node-state">待命</span></div>
+              <div class="agent-node" data-agent="finance"><div class="agent-symbol cyan-symbol">报</div><div><h3>财务分析 Agent</h3><p>趋势、勾稽与现金流分析</p><small>模型：DeepSeek-V3 · 5 Skills</small></div><span class="node-state">待命</span></div>
+              <div class="agent-node" data-agent="risk"><div class="agent-symbol red-symbol">险</div><div><h3>风险线索 Agent</h3><p>提出待核实事项和问题</p><small>模型：Qwen-Max · 7 Skills</small></div><span class="node-state">待命</span></div>
+            </div>
+            <div class="merge-lines"><i></i><span>结果交叉核验</span></div>
+            <div class="agent-final-row">
+              <div class="agent-node verify-node" data-agent="verify"><div class="agent-symbol amber-symbol">证</div><div><h3>证据核验 Agent</h3><p>检查出处、事实与结论一致性</p></div><span class="node-state">待命</span></div>
+              <div class="handoff-arrow">→</div>
+              <div class="agent-node report-node" data-agent="writer"><div class="agent-symbol green-symbol">稿</div><div><h3>报告编写 Agent</h3><p>汇总为可复核的业务初稿</p></div><span class="node-state">待命</span></div>
+            </div>
+            <div class="human-gate"><span>人</span><div><b>人工确认节点</b><p>业务人员确认来源、调整判断后才能形成正式材料</p></div><button id="humanConfirm" disabled>等待 Agent 完成</button></div>
+          </article>
+
+          <aside class="agent-side">
+            <article class="panel conversation-panel"><div class="panel-head"><div><h2>Agent 协作记录</h2><p>展示任务、反馈和相互质疑</p></div><span id="messageCount">0 条</span></div><div class="agent-messages" id="agentMessages"><div class="agent-empty"><span>⌘</span><b>尚未开始协作</b><p>启动后，这里会显示 Agent 之间的工作消息。</p></div></div></article>
+            <article class="panel evidence-panel"><div class="panel-head"><div><h2>协作产出</h2><p>结果会随执行过程更新</p></div></div><div class="output-metrics"><div><span>已检查来源</span><b id="sourceMetric">0</b></div><div><span>形成发现</span><b id="findingMetric">0</b></div><div><span>待人工确认</span><b id="reviewMetric">0</b></div></div><div class="agent-output" id="agentOutput"><div class="placeholder-output">启动协作后显示阶段性结果</div></div><button class="secondary full" id="openAgentReport" disabled>查看协作报告</button></article>
+          </aside>
+        </div>
+      </section>
+
+      <section class="view" id="blueprint">
+        <div class="page-head"><div><h1>建设方案与实施路径</h1><p>明确哪些能力直接复用开源项目，哪些部分需要结合融资担保业务自行开发。</p></div><div class="page-actions"><span class="architecture-badge">推荐架构已确定</span><button class="primary" id="startBuildPlan">查看本周任务</button></div></div>
+
+        <div class="blueprint-summary">
+          <article><span>多 Agent 底座</span><strong>AgentScope 2.0</strong><small>编排 · 会话 · RAG · 持久化</small></article>
+          <article><span>业务能力模板</span><strong>通义点金 Skills</strong><small>选择性复制后按担保业务改写</small></article>
+          <article><span>国产模型</span><strong>Qwen + DeepSeek</strong><small>每个模块配置主模型与备用模型</small></article>
+          <article><span>腾讯云部署</span><strong>Ubuntu + Docker</strong><small>比赛建议 8 核 16 GB</small></article>
+        </div>
+
+        <article class="panel architecture-panel">
+          <div class="panel-head"><div><h2>平台技术架构</h2><p>现有前端保留，开源底座负责 Agent 运行，业务数据和权限由本项目建设</p></div><span class="demo-stage">比赛演示版</span></div>
+          <div class="architecture-stack">
+            <div class="arch-layer user-layer"><b>业务前端</b><span>工作台</span><span>政策研究</span><span>客户管理</span><span>辅助尽调</span><span>Agent 中心</span></div>
+            <div class="arch-arrow">↓ 统一接口与流式进度</div>
+            <div class="arch-layer service-layer"><b>业务服务</b><span>客户与任务</span><span>材料与报告</span><span>权限与审计</span><span>模型网关</span></div>
+            <div class="arch-arrow">↓ 任务编排</div>
+            <div class="arch-layer agent-layer"><b>AgentScope 2.0</b><span>总协调 Agent</span><span>专业 Agent 团队</span><span>证据核验</span><span>人工确认</span></div>
+            <div class="arch-arrow">↓ 调用 Skill 与模型</div>
+            <div class="arch-bottom">
+              <div class="arch-layer skill-layer"><b>通义点金与自建 Skills</b><span>政策</span><span>财政</span><span>产业</span><span>企业</span><span>财务</span></div>
+              <div class="arch-layer model-layer"><b>国产大模型</b><span>通义千问</span><span>DeepSeek</span><span>腾讯混元</span></div>
+              <div class="arch-layer data-layer"><b>数据与知识库</b><span>PostgreSQL</span><span>对象存储</span><span>向量检索</span></div>
+            </div>
+          </div>
+        </article>
+
+        <div class="reuse-grid">
+          <article class="panel reuse-card"><div class="panel-head"><div><h2>可直接复用</h2><p>减少底层开发</p></div><span class="reuse-count">约 55%–65%</span></div><div class="reuse-list"><div><i>开</i><span><b>AgentScope</b><small>多 Agent 编排、会话、事件流、RAG、持久化</small></span><em>主底座</em></div><div><i>技</i><span><b>Qwen DianJin Skills</b><small>金融分析方法与输出结构</small></span><em>改写使用</em></div><div><i>模</i><span><b>国产模型接口</b><small>Qwen、DeepSeek、腾讯混元模型适配</small></span><em>配置使用</em></div><div><i>库</i><span><b>PostgreSQL 与对象存储</b><small>业务数据、文件和日志的通用基础设施</small></span><em>标准组件</em></div></div></article>
+          <article class="panel reuse-card custom-card"><div class="panel-head"><div><h2>需要自行建设</h2><p>体现机构业务特点</p></div><span class="custom-count">约 35%–45%</span></div><div class="reuse-list"><div><i>业</i><span><b>担保业务规则</b><small>材料清单、核验口径、禁用结论和报告模板</small></span><em>业务主导</em></div><div><i>客</i><span><b>客户与任务管理</b><small>客户开发阶段、尽调任务、人工确认和版本</small></span><em>自主开发</em></div><div><i>数</i><span><b>数据接口</b><small>政策来源、工商司法和内部系统的合法接入</small></span><em>采购或对接</em></div><div><i>安</i><span><b>权限审计与安全</b><small>数据隔离、密钥保护、日志、备份和恢复</small></span><em>重点建设</em></div></div></article>
+        </div>
+
+        <article class="panel roadmap-panel"><div class="panel-head"><div><h2>实施路线</h2><p>先完成比赛演示，再进入业务验证和有限试点</p></div><button class="text-btn" id="downloadPlan">实施路径文档</button></div>
+          <div class="roadmap-steps">
+            <button class="roadmap-step active" data-phase="0"><b>01</b><span><strong>环境准备</strong><small>1–2 天</small></span></button><i></i>
+            <button class="roadmap-step" data-phase="1"><b>02</b><span><strong>比赛演示版</strong><small>5–8 天</small></span></button><i></i>
+            <button class="roadmap-step" data-phase="2"><b>03</b><span><strong>业务验证版</strong><small>2–4 周</small></span></button><i></i>
+            <button class="roadmap-step" data-phase="3"><b>04</b><span><strong>有限试点</strong><small>4–8 周</small></span></button>
+          </div>
+          <div class="phase-detail" id="phaseDetail"><span>当前阶段</span><h3>环境准备</h3><p>核查腾讯云服务器，准备 Qwen 和 DeepSeek 接口，确定一个政策案例、一个虚构客户案例和首批 10 至 15 个 Skills。</p><div><b>完成标准</b><small>服务器、模型、数据样本和负责人均已明确</small></div></div>
+        </article>
+      </section>
+
+      <section class="view" id="models">
+        <div class="page-head"><div><h1>大模型配置</h1><p>统一管理国产大模型连接，并为每个业务模块指定默认和备用模型。</p></div><button class="primary" id="addProvider">＋ 添加模型服务</button></div>
+        <div class="security-note"><b>安全说明</b><span>API Key 仅保存在服务器后台并加密存储，前端页面只显示掩码。演示原型不会保存任何真实密钥。</span></div>
+        <div class="model-stats"><div><span>已接入服务</span><strong>4</strong><small>3 个可用 · 1 个待配置</small></div><div><span>默认模型</span><strong>Qwen-Max</strong><small>通义千问</small></div><div><span>本月模拟调用</span><strong>1,286</strong><small>仅演示统计</small></div><div><span>连接状态</span><strong class="ok-text">正常</strong><small>最近检测：刚刚</small></div></div>
+
+        <div class="config-grid">
+          <article class="panel provider-panel"><div class="panel-head"><div><h2>模型服务商</h2><p>配置接口地址、密钥和可用模型</p></div><button class="text-btn" id="testAll">全部测试</button></div>
+            <div class="provider-list">
+              <div class="provider-card active-provider"><div class="provider-logo qwen">Q</div><div><h3>通义千问 <span class="status done">连接正常</span></h3><p>https://dashscope.aliyuncs.com/compatible-mode/v1</p><small>API Key：sk-••••••••••••6A2F</small></div><div class="provider-actions"><button class="secondary test-model">测试连接</button><button class="text-btn edit-provider">配置</button></div></div>
+              <div class="provider-card"><div class="provider-logo deepseek">D</div><div><h3>DeepSeek <span class="status done">连接正常</span></h3><p>https://api.deepseek.com</p><small>API Key：sk-••••••••••••91BC</small></div><div class="provider-actions"><button class="secondary test-model">测试连接</button><button class="text-btn edit-provider">配置</button></div></div>
+              <div class="provider-card"><div class="provider-logo hunyuan">混</div><div><h3>腾讯混元 <span class="status done">连接正常</span></h3><p>腾讯云大模型知识引擎接口</p><small>Secret Key：••••••••••••18D7</small></div><div class="provider-actions"><button class="secondary test-model">测试连接</button><button class="text-btn edit-provider">配置</button></div></div>
+              <div class="provider-card"><div class="provider-logo glm">智</div><div><h3>智谱 AI <span class="status pending">待配置</span></h3><p>https://open.bigmodel.cn/api/paas/v4</p><small>API Key：尚未填写</small></div><div class="provider-actions"><button class="secondary test-model">测试连接</button><button class="text-btn edit-provider">配置</button></div></div>
+            </div>
+          </article>
+
+          <article class="panel assignment-panel"><div class="panel-head"><div><h2>模块模型分配</h2><p>不同任务可选择不同模型，失败时自动切换备用模型</p></div><span class="autosave">自动保存</span></div>
+            <div class="assignment-table"><table><thead><tr><th>功能模块</th><th>默认模型</th><th>备用模型</th><th>温度</th><th>状态</th></tr></thead><tbody>
+              <tr><td><strong>宏观政策分析研究助手</strong><small>政策检索、归纳、比较和报告生成</small></td><td><select class="assignment-select"><option>通义千问 Qwen-Max</option><option>DeepSeek-V3</option><option>腾讯混元-T1</option></select></td><td><select><option>DeepSeek-V3</option><option>腾讯混元-T1</option></select></td><td><input type="number" value="0.3" min="0" max="1" step="0.1"></td><td><label class="switch"><input type="checkbox" checked><span></span></label></td></tr>
+              <tr><td><strong>政策知识库</strong><small>政策分类、标签和摘要提取</small></td><td><select class="assignment-select"><option>通义千问 Qwen-Plus</option><option>DeepSeek-V3</option></select></td><td><select><option>腾讯混元-T1</option><option>DeepSeek-V3</option></select></td><td><input type="number" value="0.2" min="0" max="1" step="0.1"></td><td><label class="switch"><input type="checkbox" checked><span></span></label></td></tr>
+              <tr><td><strong>客户管理</strong><small>客户信息整理和标签生成</small></td><td><select class="assignment-select"><option>通义千问 Qwen-Plus</option><option>DeepSeek-V3</option></select></td><td><select><option>DeepSeek-V3</option><option>腾讯混元-T1</option></select></td><td><input type="number" value="0.2" min="0" max="1" step="0.1"></td><td><label class="switch"><input type="checkbox" checked><span></span></label></td></tr>
+              <tr><td><strong>客户辅助尽调</strong><small>资料理解、风险线索和访谈问题</small></td><td><select class="assignment-select"><option>DeepSeek-V3</option><option>通义千问 Qwen-Max</option></select></td><td><select><option>通义千问 Qwen-Max</option><option>腾讯混元-T1</option></select></td><td><input type="number" value="0.1" min="0" max="1" step="0.1"></td><td><label class="switch"><input type="checkbox" checked><span></span></label></td></tr>
+              <tr><td><strong>Skill 调试</strong><small>业务规则测试和提示词优化</small></td><td><select class="assignment-select"><option>通义千问 Qwen-Plus</option><option>DeepSeek-V3</option></select></td><td><select><option>DeepSeek-V3</option><option>腾讯混元-T1</option></select></td><td><input type="number" value="0.4" min="0" max="1" step="0.1"></td><td><label class="switch"><input type="checkbox" checked><span></span></label></td></tr>
+              <tr><td><strong>多 Agent 总协调</strong><small>任务拆解、调度、冲突处理和结果汇总</small></td><td><select class="assignment-select"><option>通义千问 Qwen-Max</option><option>DeepSeek-V3</option></select></td><td><select><option>DeepSeek-V3</option><option>腾讯混元-T1</option></select></td><td><input type="number" value="0.2" min="0" max="1" step="0.1"></td><td><label class="switch"><input type="checkbox" checked><span></span></label></td></tr>
+            </tbody></table></div>
+            <div class="config-footer"><div><b>模型选择原则</b><p>复杂研究优先能力较强模型；批量分类优先速度与成本；尽调模块使用低温度以减少发挥。</p></div><button class="primary" id="saveAssignments">保存模块配置</button></div>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="drawer-backdrop hidden" id="drawerBackdrop"></div>
+  <aside class="drawer hidden" id="drawer"><div class="drawer-head"><div><span class="eyebrow">研究依据</span><h2>公开来源清单</h2></div><button id="closeDrawer">×</button></div><p class="notice">以下均为原型演示数据，正式系统应保存原文链接、发布日期、抓取时间和引用片段。</p><div class="source-list"><div><b>01</b><span><strong>东川市先进制造业集群培育行动方案</strong><small>东川市工业和信息化局 · 2026-08-12</small></span><em>已核验</em></div><div><b>02</b><span><strong>东川市2025年财政预算执行情况报告</strong><small>东川市财政局 · 2026-02-08</small></span><em>已核验</em></div><div><b>03</b><span><strong>产业发展专项资金管理办法</strong><small>东川市财政局 · 2025-09-08</small></span><em>已核验</em></div><div><b>04</b><span><strong>东川高新区企业名录（示例）</strong><small>高新区管委会 · 2026-06-30</small></span><em class="review-text">待复核</em></div></div></aside>
+
+  <div class="modal-backdrop hidden" id="modalBackdrop"><div class="modal"><button class="modal-close" id="modalClose">×</button><div class="modal-icon">✓</div><h2 id="modalTitle">操作已完成</h2><p id="modalText">这是交互原型中的演示反馈。</p><button class="primary" id="modalOk">知道了</button></div></div>
+  <div class="toast" id="toast">已复制到剪贴板</div>
+  <script src="app.js"></script>
+<script src="../embed.js"></script>
+</body>
+</html>

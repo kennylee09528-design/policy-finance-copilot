@@ -1,0 +1,44 @@
+# 政策性金融智能研究与业务工作台：app（FastAPI，仅容器内网 8000）+ Caddy（80/443，使用服务器已有的 Let's Encrypt IP 证书）
+# 启动：docker compose up -d --build
+services:
+  app:
+    build: .
+    image: puhui-workbench:latest
+    restart: unless-stopped
+    environment:
+      - PH_DATA_DIR=/data
+      - TZ=Asia/Shanghai
+      - PH_BACKUP_DIR=/backup
+      # 可选：固定 API Key 加密密钥（否则首次启动自动生成 /data/secret.key）
+      # - PH_SECRET_KEY=${PH_SECRET_KEY}
+    volumes:
+      - ph_data:/data
+      # 每日数据库备份：宿主机目录，独立于数据卷（须属主 1000:1000、权限 700）
+      - ${PH_BACKUP_HOST_DIR:-./backups}:/backup
+    ports:
+      - "${PH_HTTP_PORT:-8000}:8000"
+
+  caddy:
+    image: caddy:2-alpine
+    profiles: ["https"]   # 公网 HTTPS 部署时启用：docker compose --profile https up -d
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./deploy/auth:/etc/caddy/auth:ro
+      # certbot webroot（只读）：服务器 .env 中设 ACME_WEBROOT=现有 certbot 使用的 webroot 目录
+      - ${ACME_WEBROOT:-./deploy/acme-webroot}:/srv/acme-webroot:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  ph_data:
+  caddy_data:
+  caddy_config:

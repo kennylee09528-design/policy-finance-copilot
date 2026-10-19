@@ -1,0 +1,46 @@
+{
+	# 证书由服务器上的 certbot 管理，Caddy 不申请证书、不自动跳转（跳转在下方显式配置）
+	auto_https off
+	# 直接用 IP 访问时浏览器不发送 SNI，指定默认证书
+	default_sni your.domain.example
+}
+
+(site_auth) {
+	# 全站访问口令：deploy/auth/*.caddy（服务器上生成，含 bcrypt 哈希，不入库）
+	import /etc/caddy/auth/*.caddy
+}
+
+https://your.domain.example {
+	tls /etc/letsencrypt/live/your.domain.example/fullchain.pem /etc/letsencrypt/live/your.domain.example/privkey.pem
+	encode gzip
+	request_body {
+		max_size 50MB
+	}
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "same-origin"
+		-Server
+	}
+	# ── 飞书「HTTP 回调」接收方式（备选；默认用长连接，无需放行）──────────────────────────
+	# 飞书服务器无法输入 Basic Auth，若选 HTTP 回调，需把下面 4 行取消注释，并改成 handle 包裹方式：
+	#   @feishu path /api/feishu/events
+	#   handle @feishu { reverse_proxy app:8000 }
+	#   handle { import site_auth
+	#            reverse_proxy app:8000 }
+	# 该路径由应用自身校验 Verification Token（+ 可选 Encrypt Key 签名/解密），其它路径仍受口令保护。
+	import site_auth
+	reverse_proxy app:8000
+}
+
+http:// {
+	# certbot webroot 续期校验（目录只读挂载自 ACME_WEBROOT），不加口令、不跳转
+	handle /.well-known/acme-challenge/* {
+		root * /srv/acme-webroot
+		file_server
+	}
+	handle {
+		redir https://your.domain.example{uri} permanent
+	}
+}
