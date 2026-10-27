@@ -10,6 +10,7 @@ from urllib.parse import urlparse
 from fastapi import HTTPException
 
 from .. import db
+from .validity import annotate, attach
 
 LIVE = "duplicate_of IS NULL"
 
@@ -67,7 +68,7 @@ def semantic_search(q, k=20, user=None):
     q = (q or "").strip()
     if not q:
         raise HTTPException(400, "请输入检索内容")
-    items = db.q(f"SELECT id,title,publisher,level,pub_date,url,summary,snippet,content FROM m1_items WHERE {LIVE} ORDER BY id DESC LIMIT 3000")
+    items = db.q(f"SELECT id,title,publisher,level,pub_date,url,summary,snippet,content,validity_status FROM m1_items WHERE {LIVE} ORDER BY id DESC LIMIT 3000")
     mid = _embed_model()
     method = "字符二元组相似度（未配置向量模型）"
     scores = {}
@@ -91,8 +92,14 @@ def semantic_search(q, k=20, user=None):
         qg = _grams(q)
         scores = {it["id"]: _cos(qg, _grams(_text(it))) for it in items}
     top = sorted(items, key=lambda x: scores.get(x["id"], 0), reverse=True)[:k]
-    out = [{k2: it[k2] for k2 in ("id", "title", "publisher", "level", "pub_date", "url")} | {"score": round(scores.get(it["id"], 0), 4),
-           "excerpt": (it["summary"] or it["snippet"] or "")[:160]} for it in top if scores.get(it["id"], 0) > 0]
+    out = []
+    for it in top:
+        if scores.get(it["id"], 0) <= 0:
+            continue
+        row = annotate({k2: it[k2] for k2 in ("id", "title", "publisher", "level", "pub_date", "url", "validity_status")})
+        row["score"] = round(scores.get(it["id"], 0), 4)
+        row["excerpt"] = (it["summary"] or it["snippet"] or "")[:160]
+        out.append(row)
     return {"method": method, "results": out}
 
 
@@ -104,12 +111,14 @@ def rag_answer(q, user, k=6):
     top = [x for x in res["results"]][:k]
     if not top:
         return {"answer": "知识库中没有与该问题相关的条目，无法回答。", "sources": [], "method": res["method"], "covered": False}
-    full = {r["id"]: r for r in db.q(f"SELECT id,title,publisher,pub_date,url,summary,snippet,content FROM m1_items WHERE id IN ({','.join('?' * len(top))})", [x["id"] for x in top])}
+    full = {r["id"]: r for r in db.q(f"SELECT id,title,publisher,pub_date,url,summary,snippet,content,validity_status FROM m1_items WHERE id IN ({','.join('?' * len(top))})", [x["id"] for x in top])}
     blocks = []
     for n, x in enumerate(top, 1):
         it = full.get(x["id"]) or {}
+        st, nt = attach(it)
         body = (it.get("summary") or "") + "\n" + (it.get("content") or it.get("snippet") or "")
-        blocks.append(f"[{n}] 标题：{it.get('title')}\n发布方：{it.get('publisher')}｜日期：{it.get('pub_date') or '未标注'}\n内容摘录：{body.strip()[:1500]}")
+        eff = f"效力：{st}" + (f"。{nt}" if nt else "。")
+        blocks.append(f"[{n}] 标题：{it.get('title')}\n发布方：{it.get('publisher')}｜日期：{it.get('pub_date') or '未标注'}\n{eff}\n内容摘录：{body.strip()[:1500]}")
     prompt = ("你是融资担保/再担保业务的政策研究助手。请只依据下面编号资料回答问题，不得使用资料以外的知识，不得编造文件名、文号、日期或数字。\n"
               "要求：1) 用中文简明作答（不超过 300 字，可分点）；2) 每个事实句末用 [编号] 标注出处，只能引用下列编号；"
               "3) 如果资料不足以回答，直接回答“知识库中暂无足够资料回答该问题”，并说明资料涉及了什么。\n\n"
@@ -118,9 +127,15 @@ def rag_answer(q, user, k=6):
     ans = re.sub(r"<think>.*?</think>", "", r["content"] or "", flags=re.S).strip()
     ans = re.sub(r"\[(\d+)\]", lambda m: m.group(0) if 1 <= int(m.group(1)) <= len(top) else "", ans)  # 去掉越界编号
     used = sorted({int(n) for n in re.findall(r"\[(\d+)\]", ans)})
-    srcs = [{"n": n, "id": x["id"], "title": x["title"], "url": x["url"], "publisher": x["publisher"], "level": x["level"], "pub_date": x["pub_date"], "cited": n in used}
-            for n, x in enumerate(top, 1)]
-    return {"answer": ans, "sources": srcs, "method": res["method"], "covered": bool(used), "model": r.get("model")}
+    srcs = []
+    for n, x in enumerate(top, 1):
+        st, nt = attach(full.get(x["id"]) or x)
+        srcs.append({"n": n, "id": x["id"], "title": x["title"], "url": x["url"], "publisher": x["publisher"], "level": x["level"],
+                     "pub_date": x["pub_date"], "cited": n in used, "validity_status": st, "validity_notice": nt})
+    notices = [{"n": s["n"], "id": s["id"], "title": s["title"], "validity_status": s["validity_status"], "notice": s["validity_notice"]}
+               for s in srcs if s.get("validity_notice")]
+    return {"answer": ans, "sources": srcs, "method": res["method"], "covered": bool(used), "model": r.get("model"),
+            "validity_notices": notices}
 
 
 # ---------------- 来源健康 ----------------

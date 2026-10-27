@@ -100,7 +100,11 @@ CREATE TABLE IF NOT EXISTS m1_items(
   url TEXT UNIQUE, title TEXT, publisher TEXT, level TEXT, layer TEXT, region TEXT, topic TEXT,
   pub_date TEXT, snippet TEXT, content TEXT, summary TEXT, query TEXT, provider TEXT,
   fetch_status TEXT, duplicate_of INTEGER, level_manual INTEGER DEFAULT 0,
-  run_id INTEGER, collected_at TEXT, fetched_at TEXT
+  run_id INTEGER, collected_at TEXT, fetched_at TEXT,
+  validity_status TEXT DEFAULT '未知', -- 现行有效 / 已废止 / 已失效 / 未知（人工核定）
+  effective_date TEXT, expiry_date TEXT, abolished_at TEXT,
+  superseded_by TEXT, doc_no TEXT, validity_note TEXT,
+  validity_updated_at TEXT, validity_updated_by TEXT
 );
 CREATE TABLE IF NOT EXISTS m1_runs(
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -293,6 +297,15 @@ MIGRATIONS = [  # 旧库增量加列（已存在则忽略）
     "ALTER TABLE audit_log ADD COLUMN username TEXT",
     "ALTER TABLE m1_items ADD COLUMN reviewed_at TEXT",
     "ALTER TABLE m1_items ADD COLUMN reviewed_by TEXT",
+    "ALTER TABLE m1_items ADD COLUMN validity_status TEXT DEFAULT '未知'",
+    "ALTER TABLE m1_items ADD COLUMN effective_date TEXT",
+    "ALTER TABLE m1_items ADD COLUMN expiry_date TEXT",
+    "ALTER TABLE m1_items ADD COLUMN abolished_at TEXT",
+    "ALTER TABLE m1_items ADD COLUMN superseded_by TEXT",
+    "ALTER TABLE m1_items ADD COLUMN doc_no TEXT",
+    "ALTER TABLE m1_items ADD COLUMN validity_note TEXT",
+    "ALTER TABLE m1_items ADD COLUMN validity_updated_at TEXT",
+    "ALTER TABLE m1_items ADD COLUMN validity_updated_by TEXT",
     "ALTER TABLE institutions ADD COLUMN all_access INTEGER DEFAULT 0",  # 1=全机构可见的业务机构（如再担保本部），不参与 M4/M5 合作机构测算
 ]
 

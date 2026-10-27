@@ -41,6 +41,64 @@ def _cur_log_sheet(ws, sid):
             c.number_format = "#,##0.00"
 
 
+def _formula_sheet(ws, s):
+    """口径说明：公式文件版本、本次结果打戳、参数版本、系数缺失告警、列级白话公式。"""
+    from .spec import load_spec
+    spec = load_spec()
+    res = s.get("result") or {}
+    meta = res.get("meta") or {}
+    p = res.get("param") or {}
+    alerts = [a for a in res.get("alerts") or [] if a.get("type") == "数据缺失"]
+    ws["A1"] = spec.get("title") or "授信测算口径说明"
+    ws["A1"].font = Font(bold=True, color="B0242E")
+    rows = [
+        ["项目", "内容"],
+        ["公式口径版本（结果打戳）", meta.get("formula_spec_version") or "（本次结果尚未打戳，请重新测算）"],
+        ["当前公式文件版本", spec.get("version")],
+        ["参数版本", f"v{p.get('version')}（id={meta.get('param_id', p.get('id'))}）" if p else ""],
+        ["数据集", meta.get("dataset_id") if meta.get("dataset_id") is not None else s.get("dataset_id")],
+        ["calc.py 哈希", meta.get("calc_module_hash") or ""],
+        ["方案", f"v{s.get('version')} {s.get('name') or ''}"],
+        ["缺系数规则", spec.get("missing_coefficient_rule") or ""],
+        ["权重规则", spec.get("weight_rule") or ""],
+        ["说明", spec.get("scope") or ""],
+        ["本次系数缺失告警", "无" if not alerts else "；".join(a.get("msg") or "" for a in alerts)],
+    ]
+    if p.get("weights"):
+        rows.append(["本次权重", " / ".join(f"w{k}={v}" for k, v in p["weights"].items())])
+    _ws_table(ws, rows[0], rows[1:], [28, 88])
+    ws.append([])
+    ws.append(["列", "指标", "白话公式", "输入", "缺失时", "来源"])
+    policies = spec.get("missing_policies") or {}
+    for col in spec.get("columns") or []:
+        pol = col.get("missing_policy")
+        ws.append([col.get("id"), col.get("name") or "", col.get("expr_human"), "、".join(col.get("inputs") or []),
+                   f"{pol}：{policies.get(pol, '')}", col.get("source")])
+    for cell in ws[ws.max_row - len(spec.get("columns") or [])]:
+        cell.font = Font(bold=True)
+        cell.fill = HEAD
+    for row in ws.iter_rows(min_row=2, max_col=6):
+        for c in row:
+            c.alignment = Alignment(wrap_text=True, vertical="top")
+    ws.column_dimensions["A"].width = 28
+    ws.column_dimensions["B"].width = 72
+    ws.column_dimensions["C"].width = 72
+    ws.column_dimensions["D"].width = 36
+    ws.column_dimensions["E"].width = 42
+    ws.column_dimensions["F"].width = 36
+    ws.row_dimensions[1].height = 22
+
+
+def formula_spec_xlsx(sid):
+    s = service.get_scheme(sid)
+    wb = Workbook()
+    _formula_sheet(wb.active, s)
+    wb.active.title = "口径说明"
+    bio = BytesIO()
+    wb.save(bio)
+    return bio.getvalue(), f"授信口径说明_v{s['version']}.xlsx"
+
+
 def cur_log_xlsx(sid):
     s = service.get_scheme(sid, with_result=False)
     wb = Workbook()
@@ -110,6 +168,7 @@ def scheme_xlsx(sid):
     ws4 = wb.create_sheet("状态记录")
     _ws_table(ws4, ["时间", "操作人", "原状态", "新状态", "备注"],
               [[x["at"], x["by"], x["from"], x["to"], x.get("remark", "")] for x in s["status_log"]], [20, 12, 10, 10, 40])
+    _formula_sheet(wb.create_sheet("口径说明"), s)
     bio = BytesIO()
     wb.save(bio)
     return bio.getvalue(), f"授信测算_v{s['version']}.xlsx"

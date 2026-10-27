@@ -10,6 +10,7 @@ from .auth import current_user, require_internal
 from .config import M4_SAMPLE
 from .m4 import export, service
 from .m4.calc import WEIGHT_TOL, compute
+from .m4.spec import calc_module_hash, load_spec
 from .m4.xlsxformula import xround
 
 r = APIRouter(prefix="/api/m4", tags=["M4 机构授信管理"])
@@ -186,6 +187,21 @@ def rollback(sid: int, user=Depends(internal)):
 @r.get("/compare")
 def compare(a: int, b: int, user=Depends(internal)):
     return service.compare(a, b)
+
+
+@r.get("/formula-spec")
+def formula_spec(user=Depends(internal)):
+    """当前公式口径文件（与某次测算结果里的 meta 对照）。"""
+    spec = load_spec()
+    return {**spec, "calc_module_hash": calc_module_hash()}
+
+
+@r.get("/schemes/{sid}/formula-spec.xlsx")
+def export_formula_spec(sid: int, user=Depends(internal)):
+    REC.ensure_live("m4_scheme", sid, user)
+    data, name = export.formula_spec_xlsx(sid)
+    db.audit(user, "M4", "导出口径说明", sid, {"filename": name})
+    return file_resp(W.xlsx_bytes(data, user), name, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 
 @r.get("/schemes/{sid}/export.xlsx")

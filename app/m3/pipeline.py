@@ -162,10 +162,23 @@ def m5_facts(data_date=None):
     return [{"id": f"F{i}", "name": r["name"], "value": r["value"], "delta": r["delta"], "source": r["source"]} for i, r in enumerate(rows, 1)]
 
 
+def _kb_source(r, chars, fallback_level=None):
+    """知识库命中。非现行有效时带上效力提示，供写作资料引用。"""
+    from ..m1.validity import attach
+    st, nt = attach(r)
+    level = (r.get("level") or fallback_level) if fallback_level is not None else r.get("level")
+    return {"type": "知识库(M1)", "m1_id": r["id"], "title": r["title"], "url": r["url"], "publisher": r["publisher"] or "",
+            "level": level, "pub_date": r["pub_date"], "excerpt": (r["summary"] or r["snippet"] or r["content"] or "")[:chars],
+            "text": (r["content"] or r["snippet"] or "")[:20000], "validity_status": st, "validity_notice": nt}
+
+
 def _materials(sources, facts, chars):
     L_ = ["【资料清单】"]
     for s in sources:
-        L_.append(f"{s['id']}｜{s['title']}｜{s['publisher']}（{s['level']}）｜{s.get('pub_date') or '日期未标注'}\n{(s['excerpt'] or '')[:chars]}")
+        head = f"{s['id']}｜{s['title']}｜{s['publisher']}（{s['level']}）｜{s.get('pub_date') or '日期未标注'}"
+        if s.get("validity_notice"):
+            head += f"｜{s['validity_notice']}"
+        L_.append(head + f"\n{(s['excerpt'] or '')[:chars]}")
     if facts:
         L_.append("【本公司 M5 台账数据（只写占位符，系统填数）】")
         L_ += [f"{{{{{f['id']}}}}}：{f['name']}（{f['source']}）" for f in facts]
@@ -302,9 +315,7 @@ def _run(tid, user):
         if req["use_kb"]:
             rows, terms = retrieve_kb(t["title"], req["text"], ws)
             for r in rows:
-                sources.append({"type": "知识库(M1)", "m1_id": r["id"], "title": r["title"], "url": r["url"], "publisher": r["publisher"] or "",
-                                "level": r["level"] or "C2", "pub_date": r["pub_date"], "excerpt": (r["summary"] or r["snippet"] or r["content"] or "")[:ws.get("excerpt_chars", 600)],
-                                "text": (r["content"] or r["snippet"] or "")[:20000]})
+                sources.append(_kb_source(r, ws.get("excerpt_chars", 600), "C2"))
             if _is_daily(req):  # 日报：补充 M1 最近采集的条目
                 have = {r["id"] for r in rows}
                 lv = ws.get("levels") or C.LEVELS
@@ -312,9 +323,7 @@ def _run(tid, user):
                               "ORDER BY COALESCE(pub_date, collected_at) DESC, id DESC LIMIT ?", (*lv, int(ws.get("kb_max") or 8))):
                     if r["id"] not in have:
                         rows.append(r)
-                        sources.append({"type": "知识库(M1)", "m1_id": r["id"], "title": r["title"], "url": r["url"], "publisher": r["publisher"] or "",
-                                        "level": r["level"] or "C2", "pub_date": r["pub_date"], "excerpt": (r["summary"] or r["snippet"] or r["content"] or "")[:ws.get("excerpt_chars", 600)],
-                                        "text": (r["content"] or r["snippet"] or "")[:20000]})
+                        sources.append(_kb_source(r, ws.get("excerpt_chars", 600), "C2"))
             _ev(tid, "writer", "检索", f"知识库检索（{'、'.join(terms[:6])}）命中 {len(rows)} 条")
         if req["use_web"]:
             try:
@@ -579,9 +588,7 @@ def _find_support(sent, sources, facts, user, budget):
     q = re.sub(r"\s+", " ", body)[:60]
     rows, _ = retrieve_kb(q, "", {"levels": list(AUTH_LEVELS), "kb_max": 5})
     known = {s.get("url") for s in sources}
-    cands = [{"type": "知识库(M1)", "m1_id": r["id"], "title": r["title"], "url": r["url"], "publisher": r["publisher"] or "", "level": r["level"],
-              "pub_date": r["pub_date"], "excerpt": (r["summary"] or r["snippet"] or r["content"] or "")[:600],
-              "text": (r["content"] or r["snippet"] or "")[:20000]} for r in rows if r["url"] not in known]
+    cands = [_kb_source(r, 600) for r in rows if r["url"] not in known]
     if budget["web"] > 0:
         budget["web"] -= 1
         try:
