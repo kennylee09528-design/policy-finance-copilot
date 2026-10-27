@@ -72,9 +72,11 @@ def home(user=Depends(current_user)):
                  "published": db.q1(f"SELECT COUNT(*) n FROM m2_briefs WHERE status='已发布' AND {L}")["n"]}
     if not inst:
         run = db.q1(f"SELECT started_at, status FROM m1_runs WHERE {L} ORDER BY id DESC LIMIT 1")
+        from .m1.validity import expiring_count
         out["m1"] = {"items": db.q1("SELECT COUNT(*) n FROM m1_items WHERE duplicate_of IS NULL")["n"],
                      "authority": db.q1("SELECT COUNT(*) n FROM m1_items WHERE duplicate_of IS NULL AND level IN ('A1','A2')")["n"],
                      "week": db.q1("SELECT COUNT(*) n FROM m1_items WHERE duplicate_of IS NULL AND collected_at >= datetime('now','localtime','-7 days')")["n"],
+                     "expiring": expiring_count(),
                      "last_run": run}
         out["m2"]["drafts"] = db.q1(f"SELECT COUNT(*) n FROM m2_briefs WHERE status!='已发布' AND {L}")["n"]
         out["m3"] = {"tasks": db.q1(f"SELECT COUNT(*) n FROM m3_tasks WHERE {L}")["n"],

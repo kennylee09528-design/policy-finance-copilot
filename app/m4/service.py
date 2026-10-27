@@ -4,6 +4,7 @@ from fastapi import HTTPException
 from .. import db
 from .calc import DEFAULT_TIERS, compute
 from .importer import import_workbook
+from .spec import result_meta
 
 LOCKED = ("已上会", "已批复")
 
@@ -296,6 +297,7 @@ def recompute(sid):
         r["excel_C"], r["excel_D"] = e.get("C"), e.get("D")
     res["source"] = {"file": d["source_file"], "imported_at": d["imported_at"], "mode": d["payload"].get("mode", "workbook"),
                      "sheet_map": d["payload"].get("sheet_map")}
+    res["meta"] = result_meta(p, s["dataset_id"])
     db.execute("UPDATE m4_schemes SET result=? WHERE id=?", (db.jdump(res), sid))
     return res
 

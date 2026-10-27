@@ -6,10 +6,11 @@ from fastapi.responses import Response
 from . import db
 from . import records as REC
 from . import watermark as W
-from .auth import current_user, require_internal
+from .auth import current_user, require_admin, require_internal
 from .config import M4_SAMPLE
 from .m4 import export, service
 from .m4.calc import WEIGHT_TOL, compute
+from .m4.spec import calc_module_hash, load_spec
 from .m4.xlsxformula import xround
 
 r = APIRouter(prefix="/api/m4", tags=["M4 机构授信管理"])
@@ -17,6 +18,11 @@ r = APIRouter(prefix="/api/m4", tags=["M4 机构授信管理"])
 
 def internal(user=Depends(current_user)):
     require_internal(user)
+    return user
+
+
+def admin_user(user=Depends(current_user)):
+    require_admin(user)
     return user
 
 
@@ -188,9 +194,24 @@ def compare(a: int, b: int, user=Depends(internal)):
     return service.compare(a, b)
 
 
+@r.get("/formula-spec")
+def formula_spec(user=Depends(internal)):
+    """当前公式口径文件（内部可查阅；导出仅管理员）。与某次测算结果里的 meta 对照。"""
+    spec = load_spec()
+    return {**spec, "calc_module_hash": calc_module_hash()}
+
+
+@r.get("/schemes/{sid}/formula-spec.xlsx")
+def export_formula_spec(sid: int, user=Depends(admin_user)):
+    REC.ensure_live("m4_scheme", sid, user)
+    data, name = export.formula_spec_xlsx(sid)
+    db.audit(user, "M4", "导出口径说明", sid, {"filename": name})
+    return file_resp(W.xlsx_bytes(data, user), name, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+
 @r.get("/schemes/{sid}/export.xlsx")
 def export_xlsx(sid: int, user=Depends(internal)):
-    data, name = export.scheme_xlsx(sid)
+    data, name = export.scheme_xlsx(sid, include_spec=user.get("role") == "admin")
     db.audit(user, "M4", "导出测算表", sid, {"filename": name})
     return file_resp(W.xlsx_bytes(data, user), name, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 

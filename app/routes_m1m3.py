@@ -10,6 +10,7 @@ from .auth import current_user, require_internal
 from .m1 import collector, config as C
 from .m1.classify import classify
 from .m1 import insights as INS
+from .m1 import validity as V
 from .search import service as S
 
 r = APIRouter(prefix="/api", tags=["M1/M3 联网检索"])
@@ -50,8 +51,9 @@ def m1_runs(view: str = "", user=Depends(internal)):
 
 
 @r.get("/m1/items")
-def m1_items(level: str = "", layer: str = "", region: str = "", kw: str = "", show_dup: bool = False, limit: int = 300, user=Depends(internal)):
-    sql, a = "SELECT id,url,title,publisher,level,layer,region,topic,pub_date,snippet,summary,fetch_status,duplicate_of,level_manual,collected_at FROM m1_items WHERE 1=1", []
+def m1_items(level: str = "", layer: str = "", region: str = "", kw: str = "", validity: str = "", show_dup: bool = False, limit: int = 300, user=Depends(internal)):
+    sql, a = ("SELECT id,url,title,publisher,level,layer,region,topic,pub_date,snippet,summary,fetch_status,duplicate_of,level_manual,collected_at,"
+              "validity_status,effective_date,expiry_date,abolished_at,doc_no FROM m1_items WHERE 1=1", [])
     if level:
         sql += " AND level IN (%s)" % ",".join("?" * len(level.split(",")))
         a += level.split(",")
@@ -62,6 +64,7 @@ def m1_items(level: str = "", layer: str = "", region: str = "", kw: str = "", s
     if kw:
         sql += " AND (title LIKE ? OR snippet LIKE ? OR content LIKE ? OR publisher LIKE ?)"
         a += [f"%{kw}%"] * 4
+    sql += V.filter_sql(validity, a)
     if not show_dup:
         sql += " AND duplicate_of IS NULL"
     sql += " ORDER BY COALESCE(pub_date,'') DESC, id DESC LIMIT ?"
@@ -71,7 +74,14 @@ def m1_items(level: str = "", layer: str = "", region: str = "", kw: str = "", s
     cc = INS.cited_counts([x["id"] for x in items])
     for x in items:
         x["cited"] = cc.get(x["id"], 0)
+        V.annotate(x)
     return {"items": items, "stats": {x["level"]: x["n"] for x in stats}}
+
+
+@r.get("/m1/expiring")
+def m1_expiring(limit: int = 100, user=Depends(internal)):
+    """现行有效且失效日期早于今天起 90 天的条目（含已过期但仍标现行有效）。"""
+    return V.expiring_list(max(1, min(limit, 500)))
 
 
 @r.get("/m1/semantic")
@@ -122,7 +132,13 @@ def m1_item(iid: int, user=Depends(internal)):
     it = db.q1("SELECT * FROM m1_items WHERE id=?", (iid,))
     if not it:
         raise HTTPException(404, "条目不存在")
-    return it
+    return V.annotate(it)
+
+
+@r.put("/m1/items/{iid}/validity")
+def m1_validity(iid: int, body: dict = Body(...), user=Depends(internal)):
+    """人工核定效力状态与日期。不自动抽取失效日。"""
+    return V.update(iid, body, user)
 
 
 @r.put("/m1/items/{iid}")

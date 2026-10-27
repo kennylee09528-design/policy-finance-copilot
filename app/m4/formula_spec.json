@@ -1,0 +1,278 @@
+{
+  "version": "2026.10.1",
+  "title": "授信测算口径说明",
+  "scope": "列级口径说明，与 app/m4/calc.py 现有计算行为一致。本文件不参与数值计算；调整公式须改 calc.py 并升高 version。这不是可执行公式 DSL。",
+  "missing_coefficient_rule": "参与分配的机构，若规模系数 J、就业系数 L、支小支农系数 N、累计代偿系数 P、当年代偿系数 R、评价系数 T 任一为空，则总系数 U 记空，并产生「数据缺失」告警；该机构的第二次调整 X 不计算（不把缺失当成 0 参与 ΣU 分摊）。固定额度机构不参与系数测算，不因此告警。",
+  "weight_rule": "五项权重 wL+wN+wP+wR+wT 合计须为 1，容差 ±0.02。超出容差时按比例归一后计算并告警；容差内按原值计算并提示。规模 J 为外置乘数，权重固定为 1，不计入五项权重和。",
+  "missing_policies": {
+    "null_and_alert": "缺输入时该列记空。若因此算不出总系数 U，则告警，且不算 U、不算 X。",
+    "zero": "缺输入按 0 计入，不单独告警。",
+    "skip": "缺输入则跳过该项（结果为空或不计入），不告警。"
+  },
+  "columns": [
+    {
+      "id": "J",
+      "name": "规模系数",
+      "expr_human": "J = 上一年规模 I ÷ 10000。I 为空则 J 为空，并导致 U、X 不算。",
+      "inputs": ["I"],
+      "missing_policy": "null_and_alert",
+      "source": "附件2列J；I 来自分表「2025年规模」"
+    },
+    {
+      "id": "K",
+      "name": "就业贡献指标",
+      "expr_human": "K = 就业人数 ÷ (I + 规模基期常数) × 10000。就业人数或 I 为空，或分母为 0，则 K 为空。基期常数按机构配置（附件2 仅个别机构的 K 列含此项），未配置按 0。",
+      "inputs": ["emp", "I", "base_const"],
+      "missing_policy": "null_and_alert",
+      "source": "附件2列K；就业人数来自分表「就业人数」"
+    },
+    {
+      "id": "L",
+      "name": "就业系数",
+      "expr_human": "L = K ÷ 全省平均户均就业人数 emp_avg。K 为空则 L 为空。",
+      "inputs": ["K", "emp_avg"],
+      "missing_policy": "null_and_alert",
+      "source": "附件2列L"
+    },
+    {
+      "id": "M",
+      "name": "支小支农比例",
+      "expr_human": "M = ROUND(支小支农占比, 2) ÷ 100。占比为空则 M 为空。",
+      "inputs": ["zxzn_raw"],
+      "missing_policy": "null_and_alert",
+      "source": "附件2列M；占比来自分表「支小支农业务统计表」"
+    },
+    {
+      "id": "N",
+      "name": "支小支农系数",
+      "expr_human": "M ≥ 支小支农阈值（默认 90%）时 N = 1，否则 N = M ÷ 阈值。M 为空则 N 为空。",
+      "inputs": ["M", "zxzn_threshold"],
+      "missing_policy": "null_and_alert",
+      "source": "附件2列N"
+    },
+    {
+      "id": "O",
+      "name": "累计担保代偿率",
+      "expr_human": "O = 近3年累计代偿率 ÷ 100。累计代偿率为空则 O 为空。",
+      "inputs": ["lj_raw"],
+      "missing_policy": "null_and_alert",
+      "source": "附件2列O；来自分表「近3年累计代偿率」"
+    },
+    {
+      "id": "P",
+      "name": "累计代偿系数",
+      "expr_human": "P = MAX(1 − (O − 累计代偿全省均值) ÷ 均值, 下限)。下限默认 0.5。O 为空则 P 为空。",
+      "inputs": ["O", "lj_avg", "floor"],
+      "missing_policy": "null_and_alert",
+      "source": "附件2列P"
+    },
+    {
+      "id": "Q",
+      "name": "当年代偿率",
+      "expr_human": "Q = 上一年代偿率 ÷ 100。当年代偿率为空则 Q 为空。",
+      "inputs": ["dn_raw"],
+      "missing_policy": "null_and_alert",
+      "source": "附件2列Q；来自分表「2025年代偿率」"
+    },
+    {
+      "id": "R",
+      "name": "当年代偿系数",
+      "expr_human": "R = MAX(1 − (Q − 当年代偿全省均值) ÷ 均值, 下限)。下限默认 0.5。Q 为空则 R 为空。",
+      "inputs": ["Q", "dn_avg", "floor"],
+      "missing_policy": "null_and_alert",
+      "source": "附件2列R"
+    },
+    {
+      "id": "S",
+      "name": "机构评价分",
+      "expr_human": "S = 机构评价分原值，不单独进入 U。评价分为空时 S 为空；是否告警由 T 决定。",
+      "inputs": ["pj"],
+      "missing_policy": "skip",
+      "source": "附件2列S；来自分表「2025年机构评价」"
+    },
+    {
+      "id": "T",
+      "name": "评价系数",
+      "expr_human": "T = 评价分 ÷ 100。评价分为空则 T 为空，并导致 U、X 不算。",
+      "inputs": ["pj"],
+      "missing_policy": "null_and_alert",
+      "source": "附件2列T"
+    },
+    {
+      "id": "U",
+      "name": "总系数",
+      "expr_human": "U = J × (L·wL + N·wN + P·wP + R·wR + T·wT)。J、L、N、P、R、T 任一为空则 U 为空，并对参与分配的机构告警「系数数据不全，无法计算总系数 U」，同时不算 X。",
+      "inputs": ["J", "L", "N", "P", "R", "T", "wL", "wN", "wP", "wR", "wT"],
+      "missing_policy": "null_and_alert",
+      "source": "附件2列U"
+    },
+    {
+      "id": "V",
+      "name": "注册资本调整",
+      "expr_human": "若该机构配置了 v_const，V 直接取该常数；否则 V = ROUND(增资总额 × 2 ÷ 1000, 0) × 1000。增资总额为空按 0。",
+      "inputs": ["v_const", "zc_total"],
+      "missing_policy": "zero",
+      "source": "附件2列V；增资总额来自申请表"
+    },
+    {
+      "id": "H",
+      "name": "上一年民投",
+      "expr_human": "H = 上一年符合条件的民间投资。为空按 0。",
+      "inputs": ["mintou_prev"],
+      "missing_policy": "zero",
+      "source": "附件2列H；来自分表「2025年民投」"
+    },
+    {
+      "id": "W",
+      "name": "第一次调整",
+      "expr_human": "W = (I 为空按 0) + V − H。本列不因 I 为空而记空（I 为空时 J/U/X 仍按缺系数处理）。",
+      "inputs": ["I", "V", "H"],
+      "missing_policy": "zero",
+      "source": "附件2列W"
+    },
+    {
+      "id": "X",
+      "name": "第二次调整",
+      "expr_human": "固定额度机构取给定额度，不参与分摊。其余机构 X = ROUND(ΣW × U ÷ ΣU, 0)；Σ 只含参与分配且 U 非空的机构。U 为空或 ΣU 为 0 时 X 为空，不把缺失当成 0 去分摊。",
+      "inputs": ["U", "W", "fixed", "fixed_quota"],
+      "missing_policy": "null_and_alert",
+      "source": "附件2列X"
+    },
+    {
+      "id": "third",
+      "name": "第三次调整",
+      "expr_human": "取该机构最新一条人工调整值；未调整为 0。原因、操作人、时间另记。",
+      "inputs": ["adjustments.third"],
+      "missing_policy": "zero",
+      "source": "人工录入（请示口径），非附件2公式列"
+    },
+    {
+      "id": "after_third",
+      "name": "第三次调整后",
+      "expr_human": "第三次调整后 = (X 为空时按 0) + 第三次调整。X 为空仍会在 U/X 上告警，本列不把空值继续往下传。",
+      "inputs": ["X", "third"],
+      "missing_policy": "zero",
+      "source": "请示口径"
+    },
+    {
+      "id": "mintou_adj",
+      "name": "民投完成率调整",
+      "expr_human": "按请示附表档位：可调整额度 = 授信余额 − 三季度基本额度，再按完成率相对高/低阈值分档调增或调减。三季度基本额度、授信余额、完成率任一未填，则规则值为空、本列按 0，并注明「未填写」。若有人工覆盖，以人工值及原因为准。",
+      "inputs": ["q3_base", "balance", "rate", "mintou_tiers"],
+      "missing_policy": "zero",
+      "source": "请示附表民投完成率档位规则"
+    },
+    {
+      "id": "regular_final",
+      "name": "常规授信",
+      "expr_human": "常规授信 = 第三次调整后 + 民投完成率调整。",
+      "inputs": ["after_third", "mintou_adj"],
+      "missing_policy": "zero",
+      "source": "请示口径"
+    },
+    {
+      "id": "mintou_special",
+      "name": "民间投资专项",
+      "expr_human": "民间投资专项额度。为空按 0。",
+      "inputs": ["mintou_special"],
+      "missing_policy": "zero",
+      "source": "申请表民间投资专项"
+    },
+    {
+      "id": "final",
+      "name": "最终授信",
+      "expr_human": "最终授信 = 常规授信 + 民间投资专项。最终授信以请示批复为准。",
+      "inputs": ["regular_final", "mintou_special"],
+      "missing_policy": "zero",
+      "source": "请示口径"
+    },
+    {
+      "id": "Z",
+      "name": "第三次调整（公式）",
+      "expr_human": "非固定额度：Z = X（X 为空则 Z 为空）。固定额度取给定初步额度。",
+      "inputs": ["X", "fixed", "fixed_ac"],
+      "missing_policy": "null_and_alert",
+      "source": "附件2列Z"
+    },
+    {
+      "id": "AA",
+      "name": "第四次调整",
+      "expr_human": "非固定额度：AA = Z。固定额度与 Z 相同。",
+      "inputs": ["Z"],
+      "missing_policy": "null_and_alert",
+      "source": "附件2列AA"
+    },
+    {
+      "id": "AB",
+      "name": "第五次调整",
+      "expr_human": "AB = ROUND(IF(ROUND(AA/10000,0)×10000=0, 10000, ROUND(AA/1000,0)×1000) / 10000, 0) × 10000。即 AA 按 1000 取整后落到 1 万档，取整后为 0 则给 10000。AA 为空则 AB 为空。",
+      "inputs": ["AA"],
+      "missing_policy": "null_and_alert",
+      "source": "附件2列AB"
+    },
+    {
+      "id": "AF",
+      "name": "截止备案金额",
+      "expr_human": "AF = 截止备案金额。未提供则为空，不告警。",
+      "inputs": ["filed_amount"],
+      "missing_policy": "skip",
+      "source": "附件2列AF"
+    },
+    {
+      "id": "AH",
+      "name": "已备案占比",
+      "expr_human": "AH = AF ÷ AB。AF 为空，或 AB 为空或为 0，则 AH 为空，不告警。",
+      "inputs": ["AF", "AB"],
+      "missing_policy": "skip",
+      "source": "附件2列AH"
+    },
+    {
+      "id": "AC",
+      "name": "初步授信额度",
+      "expr_human": "非固定额度：AC = AB +（AH ≥ 备案占比阈值（默认 40%）则加备案激励（默认 20000），否则加 0）。AH 为空时激励按 0，不另告警。AB 为空则 AC 为空。固定额度直接取给定值。",
+      "inputs": ["AB", "AH", "filed_ratio", "filed_bonus"],
+      "missing_policy": "null_and_alert",
+      "source": "附件2列AC"
+    },
+    {
+      "id": "D",
+      "name": "民间投资专项（申请表）",
+      "expr_human": "D = 民间投资专项。为空按 0。",
+      "inputs": ["mintou_special"],
+      "missing_policy": "zero",
+      "source": "申请表 F / 附件2列D"
+    },
+    {
+      "id": "AI",
+      "name": "机构总额度",
+      "expr_human": "AI = AC + D。AC 为空则 AI 为空。",
+      "inputs": ["AC", "D"],
+      "missing_policy": "null_and_alert",
+      "source": "附件2列AI"
+    },
+    {
+      "id": "Y",
+      "name": "工行差额",
+      "expr_human": "仅当工行预计发生额 G > 0 且 X 非空时，Y = X − G；否则 Y 为空，不告警。",
+      "inputs": ["X", "G"],
+      "missing_policy": "skip",
+      "source": "附件2列Y"
+    },
+    {
+      "id": "cur_regular",
+      "name": "目前最新常规业务授信额度",
+      "expr_human": "目前最新常规业务授信额度 = 申请表 C+D（为空按 0）+ 人工增减合计。人工增减只作用于此列，不改 AC。",
+      "inputs": ["apply_regular_tech", "cur_regular_delta"],
+      "missing_policy": "zero",
+      "source": "申请表 C+D 与人工增减留痕"
+    },
+    {
+      "id": "cur_mintou",
+      "name": "目前最新民间投资授信额度",
+      "expr_human": "目前最新民间投资授信额度 = 申请表 F（为空按 0）+ 人工增减合计。",
+      "inputs": ["mintou_special", "cur_mintou_delta"],
+      "missing_policy": "zero",
+      "source": "申请表 F 与人工增减留痕"
+    }
+  ]
+}

@@ -225,7 +225,7 @@ PAGES.home = async v => {
     card('①', '资讯', 'M2', 'm2', '今日行业 Brief', n(m2.published), '期已发布', [m2.latest ? `最新：${esc(m2.latest.date)}（${m2.latest.items ?? 0} 条要闻）` : '暂无已发布简报']),
     card('②', '监控', 'M5', 'm5', '本机构额度使用', m5 ? esc(m5.stat_date) : '—', '最新统计时点', [m5 ? `时间进度 ${pct(m5.time_progress)}` : '尚无快照', m5 && m5.red ? `<b class="bad">本机构有 ${m5.red} 项红色预警</b>` : '', m5 && m5.yellow ? `进度滞后提示 ${m5.yellow} 项` : ''], m5 && m5.red ? 'risk' : ''),
   ] : [
-    card('①', '采集', 'M1', 'm1', '财金协同知识库', n(m1.items), '条权威知识', [`A1/A2 部委与省级发布 ${n(m1.authority)} 条`, `近 7 天新增 ${n(m1.week)} 条`, m1.last_run ? `最近采集 ${esc(m1.last_run.started_at)} · ${esc(m1.last_run.status)}` : '尚未采集（可加载演示数据）']),
+    card('①', '采集', 'M1', 'm1', '财金协同知识库', n(m1.items), '条权威知识', [`A1/A2 部委与省级发布 ${n(m1.authority)} 条`, `近 7 天新增 ${n(m1.week)} 条`, `90 天内到期 ${n(m1.expiring)} 条`, m1.last_run ? `最近采集 ${esc(m1.last_run.started_at)} · ${esc(m1.last_run.status)}` : '尚未采集（可加载演示数据）']),
     card('②', '沉淀', 'M2', 'm2', '今日行业 Brief', n(m2.published), '期已发布', [m2.latest ? `最新：${esc(m2.latest.date)}（${m2.latest.items ?? 0} 条）` : '暂无已发布简报', `待发布草稿 ${n(m2.drafts)} 期`, '关键数字找不到原文即拦截']),
     card('③', '生产', 'M3 · PPT', 'm3', '研究写作与汇报', n(m3.final), '篇已定稿', [`写作任务 ${n(m3.tasks)} 个 · 引用登记 ${n(m3.citations)} 条`, `沉淀写作规范 ${n(m3.style)} 条`, `PPT ${n(ppt.files)} 个版本（${n(ppt.jobs)} 个任务）`]),
     card('④', '核算', 'M4', 'm4', '机构授信测算', m4 ? f0(m4.sumFinal) : '—', '万元 最终授信合计', [m4 ? `当前 v${m4.version}「${esc(m4.name)}」· ${esc(m4.status)}` : '请导入附件2', m4 ? `${m4.count} 家机构 · 人工调整 ${m4.adjustments} 笔留痕` : '', m4 ? `方案版本 ${m4.versions} 个，可对比回滚` : '']),
@@ -263,8 +263,8 @@ PAGES.m1 = async (v, sub) => {
   if (sub !== 'collect') sub = 'collect';  // 原型页（作品_网页 / 3.网站）已下线，未知子页回到采集列表
   const [cfg, runs, hist] = await Promise.all([api('/api/m1/config'), api('/api/m1/runs'), api('/api/m1/runs' + recQ('m1_run'))]);
   const f = M1F;
-  const q = new URLSearchParams({ level: f.level || '', layer: f.layer || '', kw: f.kw || '' });
-  const d = await api('/api/m1/items?' + q);
+  const q = new URLSearchParams({ level: f.level || '', layer: f.layer || '', kw: f.kw || '', validity: f.validity || '' });
+  const [d, exp] = await Promise.all([api('/api/m1/items?' + q), api('/api/m1/expiring?limit=30')]);
   const lastRun = runs.runs[0];
   v.innerHTML = `<div class="page-head"><div><h1>财金协同知识库（M1）</h1><p>搜索驱动采集：按「查询模板 × 主题 × 地域（国家 / 31 省 / 重点城市 / 广东各地市）」调用联网搜索 → 仅保留权威发布方（A1/A2/B1 等，规则可在系统管理中编辑）→ 抓取正文 → AI 要点摘要。</p></div>
    <div class="page-actions"><button class="primary" onclick="m1Run()" ${runs.running ? 'disabled' : ''}>${runs.running ? '采集中…' : '立即采集一轮'}</button></div></div>
@@ -274,13 +274,19 @@ PAGES.m1 = async (v, sub) => {
   <div class="kv mb"><div><span>知识条目（去重后）</span><b>${Object.values(d.stats).reduce((a, b) => a + b, 0)}</b></div><div><span>等级分布</span><b style="font-size:13px">${Object.entries(d.stats).map(([k, n]) => k + ' ' + n).join(' · ') || '—'}</b></div>
    <div><span>下一轮检索</span><b>${cfg.plan_total} 次</b></div><div><span>定时采集</span><b style="font-size:14px">${cfg.config.schedule.enabled ? '每日 ' + esc(cfg.config.schedule.times.join('、')) : '未启用'}</b></div></div>
   ${lastRun ? `<div class="alert ${lastRun.status === '失败' ? 'error' : 'info'} mb">最近一轮 #${lastRun.id}（${esc(lastRun.trigger)}，${esc(lastRun.started_at)}）${esc(lastRun.status)}：检索 ${lastRun.stats.queries ?? 0} 次，结果 ${lastRun.stats.results ?? 0} 条，保留 ${lastRun.stats.kept ?? 0}，新增 ${lastRun.stats.new ?? 0}，非权威丢弃 ${lastRun.stats.dropped ?? 0}，抓取 ${lastRun.stats.fetched ?? 0}/失败 ${lastRun.stats.fetch_fail ?? 0}，AI 摘要 ${lastRun.stats.summarized ?? 0}${lastRun.log ? `<br><span class="small">${esc(lastRun.log.slice(0, 300))}</span>` : ''}</div>` : '<div class="alert info mb">尚未执行采集。请管理员先在「系统管理 · 联网搜索」配置 Tavily 或阿里云 IQS，然后点击「立即采集一轮」或开启定时采集。</div>'}
+  <div class="panel mb"><div class="panel-head"><div><h2>即将到期（90天内）</h2><p>现行有效，且失效日期早于 ${esc(exp.cutoff)}（含已过期但仍标「现行有效」）。请人工核定；非现行有效的文件勿作决策依据。</p></div>
+   <button class="secondary mini" onclick="M1F={...M1F,validity:'expiring'};route()">只看这些</button></div>
+   <div class="tbl-wrap"><table class="grid"><thead><tr><th>失效日期</th><th>等级</th><th>标题</th><th>发布方</th><th>文号</th><th></th></tr></thead><tbody>
+   ${exp.items.map(i => `<tr><td class="small">${esc(i.expiry_date)}${i.overdue ? ' <span class="pill red">已过期</span>' : ' <span class="pill gold">将到期</span>'}</td><td>${LV_PILL(i.level)}</td><td class="l" style="max-width:420px">${M1LINK(i.url, i.title)}</td><td class="l">${esc(i.publisher || '')}</td><td class="small">${esc(i.doc_no || '—')}</td><td><a class="edit" onclick="m1Item(${i.id})">核定</a></td></tr>`).join('') || '<tr><td colspan="6" class="small">暂无。把条目标为「现行有效」并填写失效日期后，90 天内到期的会列在这里。</td></tr>'}
+   </tbody></table></div></div>
   <div class="panel"><div class="panel-head"><div><h2>采集结果</h2></div><div class="form-row" style="margin:0">
    <select class="in" id="f_lv"><option value="">全部等级</option>${['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].map(l => `<option ${f.level === l ? 'selected' : ''}>${l}</option>`).join('')}</select>
    <select class="in" id="f_ly"><option value="">全部层级</option>${['国家', '省级', '重点特殊财政管理城市', '普通地市'].map(l => `<option ${f.layer === l ? 'selected' : ''}>${l}</option>`).join('')}</select>
-   <input class="in" id="f_kw" placeholder="关键词" value="${esc(f.kw || '')}"><button class="secondary mini" onclick="M1F={level:$('#f_lv').value,layer:$('#f_ly').value,kw:$('#f_kw').value};route()">筛选</button></div></div>
-  <div class="tbl-wrap"><table class="grid"><thead><tr><th>等级</th><th>标题</th><th>发布方</th><th>发布日期</th><th>层级/地域</th><th>主题</th><th>正文</th><th>要点</th><th></th></tr></thead><tbody>
-  ${d.items.map(i => `<tr><td><span class="pill ${i.level === 'A1' ? 'red' : i.level === 'A2' ? 'gold' : 'blue'}">${i.level}</span>${i.level_manual ? '<span class="small">✎</span>' : ''}</td><td class="l" style="max-width:380px">${M1LINK(i.url, i.title)}</td>
-   <td class="l">${esc(i.publisher)}</td><td>${esc(i.pub_date || '—')}</td><td class="small">${esc(i.layer)}·${esc(i.region)}</td><td class="small">${esc(i.topic)}</td><td class="small">${esc(i.fetch_status || '')}</td><td>${i.summary ? '✓' : ''}${i.cited ? ` <a class="pill blue" style="cursor:pointer" onclick="m1Cited(${i.id})" title="被 M3 写作引用">被引用 ${i.cited}</a>` : ''}</td><td><a class="edit" onclick="m1Item(${i.id})">详情</a></td></tr>`).join('') || '<tr><td colspan="9" class="small">暂无条目</td></tr>'}
+   <select class="in" id="f_val"><option value="">全部效力</option>${[['expiring', '即将到期（90天内）'], ['abolished', '已废止'], ['现行有效', '现行有效'], ['已失效', '已失效'], ['未知', '未知']].map(([k, n]) => `<option value="${k}" ${f.validity === k ? 'selected' : ''}>${n}</option>`).join('')}</select>
+   <input class="in" id="f_kw" placeholder="关键词" value="${esc(f.kw || '')}"><button class="secondary mini" onclick="M1F={level:$('#f_lv').value,layer:$('#f_ly').value,kw:$('#f_kw').value,validity:$('#f_val').value};route()">筛选</button></div></div>
+  <div class="tbl-wrap"><table class="grid"><thead><tr><th>等级</th><th>效力</th><th>标题</th><th>发布方</th><th>发布日期</th><th>层级/地域</th><th>主题</th><th>正文</th><th>要点</th><th></th></tr></thead><tbody>
+  ${d.items.map(i => `<tr><td><span class="pill ${i.level === 'A1' ? 'red' : i.level === 'A2' ? 'gold' : 'blue'}">${i.level}</span>${i.level_manual ? '<span class="small">✎</span>' : ''}</td><td>${VAL_PILL(i.validity_status)}</td><td class="l" style="max-width:380px">${M1LINK(i.url, i.title)}</td>
+   <td class="l">${esc(i.publisher)}</td><td>${esc(i.pub_date || '—')}</td><td class="small">${esc(i.layer)}·${esc(i.region)}</td><td class="small">${esc(i.topic)}</td><td class="small">${esc(i.fetch_status || '')}</td><td>${i.summary ? '✓' : ''}${i.cited ? ` <a class="pill blue" style="cursor:pointer" onclick="m1Cited(${i.id})" title="被 M3 写作引用">被引用 ${i.cited}</a>` : ''}</td><td><a class="edit" onclick="m1Item(${i.id})">详情</a></td></tr>`).join('') || '<tr><td colspan="10" class="small">暂无条目</td></tr>'}
   </tbody></table></div></div>
   <div class="panel mt"><div class="panel-head"><div><h2>采集记录</h2><p>每轮采集的执行日志（归档/删除只影响记录本身，不删除已采集的知识条目）</p></div>${recTabs('m1_run')}</div>
   <div class="tbl-wrap"><table class="grid"><thead><tr><th></th><th>#</th><th>触发</th><th>开始</th><th>结束</th><th>状态</th><th>检索/保留/新增</th><th>发起人</th><th></th></tr></thead><tbody>
@@ -290,6 +296,7 @@ PAGES.m1 = async (v, sub) => {
 let M1F = {};
 const M1H = (sub, desc) => `<div class="page-head"><div><h1>财金协同知识库（M1）</h1><p>${desc}</p></div></div>${subtabs(M1_TABS.map(x => [x[0], x[1]]), sub, 'm1')}`;
 const LV_PILL = l => `<span class="pill ${l === 'A1' ? 'red' : l === 'A2' ? 'gold' : 'blue'}">${esc(l || '—')}</span>`;
+const VAL_PILL = s => { const t = s || '未知'; const c = t === '现行有效' ? 'green' : (t === '已废止' || t === '已失效' ? 'red' : 'gray'); return `<span class="pill ${c}">${esc(t)}</span>`; };
 async function m1Rag(q) {
   const box = $('#m1rag'); if (!box) return;
   const head = '<b>AI 回答</b> <span class="pill gold">AI 生成，仅供参考</span>';
@@ -297,12 +304,14 @@ async function m1Rag(q) {
     const a = await api('/api/m1/semantic/answer', { method: 'POST', json: { q } });
     if ($('#m1rag') !== box) return;
     const html = esc(a.answer).replace(/\n/g, '<br>').replace(/\[(\d+)\]/g, (m, n) => { const s = a.sources[n - 1]; return s ? `<a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer" title="${esc(s.title)}">[${n}]</a>` : ''; });
-    box.innerHTML = `${head}<div class="mt mb" style="line-height:1.8">${html}</div>
-     <div class="small"><b>参考条目</b>（仅依据以下知识库条目；[n] 点击打开原文）：${a.sources.map(s => `<div>[${s.n}] ${M1LINK(s.url, s.title)} <span class="small">${esc(s.publisher || '')} · ${esc(s.level || '')} · ${esc(s.pub_date || '—')}</span> <a class="edit" onclick="m1Item(${s.id})">详情</a>${s.cited ? '' : ' <span class="small" style="color:var(--muted)">（未被引用）</span>'}</div>`).join('')}</div>
+    const bans = a.validity_notices || [];
+    const banHtml = bans.length ? `<div class="alert warn mb">${bans.map(x => `${esc(x.notice)} <span class="small">（[${x.n}] ${esc(x.title || '')}）</span>`).join('<br>')}</div>` : '';
+    box.innerHTML = `${head}${banHtml}<div class="mt mb" style="line-height:1.8">${html}</div>
+     <div class="small"><b>参考条目</b>（仅依据以下知识库条目；[n] 点击打开原文）：${a.sources.map(s => `<div>[${s.n}] ${M1LINK(s.url, s.title)} <span class="small">${esc(s.publisher || '')} · ${esc(s.level || '')} · ${esc(s.pub_date || '—')}</span> ${VAL_PILL(s.validity_status)}${s.validity_notice ? ` <span class="small">${esc(s.validity_notice)}</span>` : ''} <a class="edit" onclick="m1Item(${s.id})">详情</a>${s.cited ? '' : ' <span class="small" style="color:var(--muted)">（未被引用）</span>'}</div>`).join('')}</div>
      <p class="small" style="color:var(--muted)">${a.covered ? '' : '知识库可能未覆盖该问题，请以原文为准。'}检索方式：${esc(a.method)}${a.model ? ' · 模型：' + esc(a.model) : ''}</p>`;
   } catch (e) { box.innerHTML = head + `<p class="small">AI 回答生成失败：${esc(e.message || e)}。下方检索结果不受影响。</p>`; }
 }
-const M1KB = { ly: '', kw: '', open: {} };
+const M1KB = { ly: '', kw: '', val: '', open: {} };
 const M1LINK = (url, title) => /^https?:\/\//.test(url || '') ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="打开原文（新标签页）">${esc(title || url)}</a>` : `${esc(title || '')} <span class="small" style="color:var(--muted)">暂无原文链接</span>`;
 async function m1KbToggle(id, a) {
   const tr = a.closest('tr').nextElementSibling;
@@ -313,17 +322,18 @@ async function m1KbToggle(id, a) {
 }
 const M1X = {
   async kb(v) {
-    const d = await api('/api/m1/items?' + new URLSearchParams({ layer: M1KB.ly, kw: M1KB.kw, limit: 1000 }));
+    const d = await api('/api/m1/items?' + new URLSearchParams({ layer: M1KB.ly, kw: M1KB.kw, validity: M1KB.val || '', limit: 1000 }));
     const by = {}; d.items.forEach(x => { by[x.layer || '其他'] = (by[x.layer || '其他'] || 0) + 1; });
     v.innerHTML = M1H('kb', '已入库的真实政策条目（均来自权威来源采集，标题点击在新标签页打开原文；「展开」查看要点/摘要/正文摘录）。') + `
     <div class="kv mb"><div><span>条目（去重后）</span><b>${d.items.length}</b></div><div><span>层级分布</span><b style="font-size:13px">${Object.entries(by).map(([k, n]) => k + ' ' + n).join(' · ') || '—'}</b></div></div>
     <div class="panel"><div class="panel-head"><div><h2>政策知识库</h2></div><div class="form-row" style="margin:0">
      <select class="in" id="kb_ly"><option value="">全部层级</option>${['国家', '省级', '重点特殊财政管理城市', '普通地市'].map(l => `<option ${M1KB.ly === l ? 'selected' : ''}>${l}</option>`).join('')}</select>
+     <select class="in" id="kb_val"><option value="">全部效力</option>${[['expiring', '即将到期（90天内）'], ['abolished', '已废止'], ['现行有效', '现行有效'], ['已失效', '已失效'], ['未知', '未知']].map(([k, n]) => `<option value="${k}" ${M1KB.val === k ? 'selected' : ''}>${n}</option>`).join('')}</select>
      <input class="in" id="kb_kw" placeholder="关键词（标题/正文）" value="${esc(M1KB.kw)}"><button class="secondary mini" id="kb_go">检索</button></div></div>
-    <div class="tbl-wrap"><table class="grid"><thead><tr><th>等级</th><th>标题</th><th>发布方</th><th>发布日期</th><th>层级/地域</th><th></th></tr></thead><tbody>
-    ${d.items.map(i => `<tr><td>${LV_PILL(i.level)}</td><td class="l" style="max-width:480px">${M1LINK(i.url, i.title)}</td><td class="l">${esc(i.publisher)}</td><td>${esc(i.pub_date || '—')}</td><td class="small">${esc(i.layer)}·${esc(i.region)}</td>
-     <td style="white-space:nowrap"><a class="edit" onclick="m1KbToggle(${i.id},this)">展开</a><a class="edit" onclick="m1Item(${i.id})">详情</a></td></tr><tr style="display:none"><td colspan="6" class="l"></td></tr>`).join('') || '<tr><td colspan="6" class="small">暂无条目</td></tr>'}</tbody></table></div></div>`;
-    const go = () => { M1KB.ly = $('#kb_ly').value; M1KB.kw = $('#kb_kw').value.trim(); route(); };
+    <div class="tbl-wrap"><table class="grid"><thead><tr><th>等级</th><th>效力</th><th>标题</th><th>发布方</th><th>发布日期</th><th>层级/地域</th><th></th></tr></thead><tbody>
+    ${d.items.map(i => `<tr><td>${LV_PILL(i.level)}</td><td>${VAL_PILL(i.validity_status)}</td><td class="l" style="max-width:480px">${M1LINK(i.url, i.title)}</td><td class="l">${esc(i.publisher)}</td><td>${esc(i.pub_date || '—')}</td><td class="small">${esc(i.layer)}·${esc(i.region)}</td>
+     <td style="white-space:nowrap"><a class="edit" onclick="m1KbToggle(${i.id},this)">展开</a><a class="edit" onclick="m1Item(${i.id})">详情</a></td></tr><tr style="display:none"><td colspan="7" class="l"></td></tr>`).join('') || '<tr><td colspan="7" class="small">暂无条目</td></tr>'}</tbody></table></div></div>`;
+    const go = () => { M1KB.ly = $('#kb_ly').value; M1KB.kw = $('#kb_kw').value.trim(); M1KB.val = $('#kb_val').value; route(); };
     $('#kb_go').onclick = go; $('#kb_kw').onkeydown = e => { if (e.key === 'Enter') go(); };
   },
   async semantic(v) {
@@ -333,7 +343,7 @@ const M1X = {
     <div class="panel panel-b mb"><div class="form-row" style="margin:0"><input class="in" id="sq" style="flex:1" placeholder="例如：对降低担保费率的机构有什么奖励政策" value="${esc(q)}"><button class="primary" onclick="M1X.q=$('#sq').value.trim();route()">检索</button></div></div>
     ${r ? `<div class="panel panel-b mb" id="m1rag"><b>AI 回答</b> <span class="pill gold">AI 生成，仅供参考</span><p class="small">正在根据知识库检索结果生成回答…</p></div>` : ''}
     ${r ? `<div class="small mb">检索方式：${esc(r.method)} · 命中 ${r.results.length} 条</div><div class="panel"><div class="tbl-wrap"><table class="grid"><thead><tr><th>相似度</th><th>等级</th><th>标题 / 摘要</th><th>发布方</th><th>发布日期</th><th></th></tr></thead><tbody>
-    ${r.results.map(x => `<tr><td class="n">${(x.score * 100).toFixed(1)}</td><td>${LV_PILL(x.level)}</td><td class="l" style="max-width:560px">${M1LINK(x.url, x.title)}<br><span class="small">${esc(x.excerpt)}</span></td><td class="l">${esc(x.publisher)}</td><td>${esc(x.pub_date || '—')}</td><td><a class="edit" onclick="m1Item(${x.id})">详情</a></td></tr>`).join('') || '<tr><td colspan="6" class="small">无结果</td></tr>'}</tbody></table></div></div>` : ''}`;
+    ${r.results.map(x => `<tr><td class="n">${(x.score * 100).toFixed(1)}</td><td>${LV_PILL(x.level)}</td><td class="l" style="max-width:560px">${M1LINK(x.url, x.title)}<br><span class="small">${esc(x.excerpt)}</span>${x.validity_notice ? `<div class="small">${VAL_PILL(x.validity_status)} ${esc(x.validity_notice)}</div>` : `<div class="small">${VAL_PILL(x.validity_status)}</div>`}</td><td class="l">${esc(x.publisher)}</td><td>${esc(x.pub_date || '—')}</td><td><a class="edit" onclick="m1Item(${x.id})">详情</a></td></tr>`).join('') || '<tr><td colspan="6" class="small">无结果</td></tr>'}</tbody></table></div></div>` : ''}`;
     const i = $('#sq'); i.onkeydown = e => { if (e.key === 'Enter') { M1X.q = i.value.trim(); route(); } };
     if (r) m1Rag(q);
   },
@@ -382,11 +392,24 @@ async function m1Run() { await api('/api/m1/run', { method: 'POST' }); toast('�
 async function m1Item(id) {
   const i = await api('/api/m1/items/' + id);
   openModal('#' + i.id + ' ' + (i.title || '条目'), `<p class="small mb"><a href="${esc(i.url)}" target="_blank" rel="noopener noreferrer">${esc(i.url)}</a><br>发布方：${esc(i.publisher)} · 发布日期：${esc(i.pub_date || '—')} · 检索词：${esc(i.query)} · 搜索：${esc(i.provider)} · 采集：${esc(i.collected_at)}</p>
+  <div class="note-box mb"><b>政策效力</b>（人工核定，不自动抽取失效日）${i.validity_notice ? `<br><b>${esc(i.validity_notice)}</b>` : '<br>现行有效'}
+  ${i.validity_updated_at ? `<br><span class="small">上次核定：${esc(i.validity_updated_by || '')} ${esc(i.validity_updated_at)}</span>` : ''}</div>
+  <div class="form-row"><label>效力状态<select class="in" id="it_vs">${['现行有效', '已废止', '已失效', '未知'].map(s => `<option ${(i.validity_status || '未知') === s ? 'selected' : ''}>${s}</option>`).join('')}</select></label>
+   <label>文号<input class="in" id="it_doc" value="${esc(i.doc_no || '')}"></label>
+   <label>生效日期<input class="in" id="it_eff" type="date" value="${esc(i.effective_date || '')}"></label>
+   <label>失效日期<input class="in" id="it_exp" type="date" value="${esc(i.expiry_date || '')}"></label>
+   <label>废止日期<input class="in" id="it_abo" type="date" value="${esc(i.abolished_at || '')}"></label></div>
+  <div class="form-row"><label style="flex:1">替代文件<input class="in" id="it_sup" value="${esc(i.superseded_by || '')}" placeholder="标题或文号，不自动关联"></label>
+   <label style="flex:1">备注<input class="in" id="it_note" value="${esc(i.validity_note || '')}"></label><button class="secondary mini" id="it_val">保存效力</button></div>
   <div class="form-row"><label>来源等级（人工可改）<select class="in" id="it_lv">${['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].map(l => `<option ${l === i.level ? 'selected' : ''}>${l}</option>`).join('')}</select></label><label style="flex:1">修改原因<input class="in" id="it_rs"></label><button class="secondary mini" id="it_save">保存等级</button>
   <button class="secondary mini" id="it_ref">重新抓取正文</button><button class="secondary mini" id="it_sum">AI 提炼要点</button></div>
   ${i.summary ? `<div class="note-box mb"><b>AI 要点（请对照原文核实）</b><br>${esc(i.summary).replace(/\n/g, '<br>')}</div>` : ''}
   <h3 class="small">检索摘要</h3><p class="small mb">${esc(i.snippet || '')}</p><h3 class="small">正文（${esc(i.fetch_status || '')}）</h3><div class="small" style="white-space:pre-wrap;max-height:300px;overflow:auto;background:var(--bg);padding:8px;border-radius:8px">${esc((i.content || '').slice(0, 8000))}</div>`);
   $('#it_save').onclick = async () => { await api('/api/m1/items/' + id, { method: 'PUT', json: { level: $('#it_lv').value, reason: $('#it_rs').value } }); toast('已保存'); closeModal(); route(); };
+  $('#it_val').onclick = async () => {
+    await api('/api/m1/items/' + id + '/validity', { method: 'PUT', json: { validity_status: $('#it_vs').value, doc_no: $('#it_doc').value, effective_date: $('#it_eff').value, expiry_date: $('#it_exp').value, abolished_at: $('#it_abo').value, superseded_by: $('#it_sup').value, validity_note: $('#it_note').value } });
+    toast('效力已保存'); closeModal(); route();
+  };
   $('#it_ref').onclick = async () => { await api(`/api/m1/items/${id}/refetch`, { method: 'POST' }); m1Item(id); };
   $('#it_sum').onclick = async () => { await api(`/api/m1/items/${id}/summarize`, { method: 'POST' }); m1Item(id); };
 }

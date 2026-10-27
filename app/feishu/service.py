@@ -456,15 +456,20 @@ def h_policy(ctx, t, kw=""):
     if len(q) < 2:
         return _r("请带上关键词，例如：政策 融资担保 降费", "policy")
     like = f"%{q}%"
-    rows = db.q("SELECT title, publisher, level, pub_date, url FROM m1_items WHERE duplicate_of IS NULL AND (title LIKE ? OR snippet LIKE ? OR summary LIKE ? OR publisher LIKE ?) "
+    from ..m1.validity import notice as validity_notice
+    rows = db.q("SELECT title, publisher, level, pub_date, url, validity_status FROM m1_items WHERE duplicate_of IS NULL AND (title LIKE ? OR snippet LIKE ? OR summary LIKE ? OR publisher LIKE ?) "
                 "ORDER BY level, COALESCE(pub_date,'') DESC LIMIT 6", (like,) * 4)
     n = db.q1("SELECT COUNT(*) n FROM m1_items WHERE duplicate_of IS NULL AND (title LIKE ? OR snippet LIKE ? OR summary LIKE ? OR publisher LIKE ?)", (like,) * 4)["n"]
     if not rows:
         return _r(f"M1 知识库中没有找到与「{q}」相关的条目。" + foot("M1 财金协同知识库"), "policy")
     ls = [f"与「{q}」相关的政策/资讯，共 {n} 条，按权威分级显示前 {len(rows)} 条："]
     for i, r in enumerate(rows, 1):
-        ls.append(f"{i}. {r['title']}\n   来源：{r['publisher'] or '—'}｜权威分级：{r['level']}｜发布：{r['pub_date'] or '未标注'}\n   {r['url']}")
-    return _r("\n".join(ls) + foot("M1 财金协同知识库（来源分级 A1 最权威）"), "policy")
+        line = f"{i}. {r['title']}\n   来源：{r['publisher'] or '—'}｜权威分级：{r['level']}｜发布：{r['pub_date'] or '未标注'}\n   {r['url']}"
+        nt = validity_notice(r.get("validity_status"))
+        if nt:
+            line += f"\n   {nt}"
+        ls.append(line)
+    return _r("\n".join(ls) + foot("M1 财金协同知识库（来源分级 A1 最权威；非现行有效请勿作决策依据）"), "policy")
 
 
 # ---------------------------------------------------------------- 研究报告（M3）

@@ -1,7 +1,7 @@
 /* 机构授信管理（M4） */
 const M4 = { scheme: null };
 // 红字⑤：页签按编号调序（1 数据导入 → 2 参数配置 → 3 测算结果）
-const M4_TABS = [['data', '① 数据导入与基础数据'], ['params', '② 参数配置'], ['result', '③ 测算结果'], ['versions', '方案版本'], ['qingshi', '请示生成'], ['history', '调整留痕']];
+const M4_TABS = [['data', '① 数据导入与基础数据'], ['params', '② 参数配置'], ['result', '③ 测算结果'], ['spec', '口径说明'], ['versions', '方案版本'], ['qingshi', '请示生成'], ['history', '调整留痕']];
 const M4_KIND = { third: '第三次调整', mintou: '民投完成率调整', cur_regular: '目前最新常规业务授信额度', cur_mintou: '目前最新民间投资授信额度' };
 const m4n = v => f2(v);  // 万元，千分位，2 位小数
 const STATUS_PILL = s => `<span class="pill ${s === '已批复' ? 'green' : s === '已上会' ? 'blue' : 'gray'}">${esc(s)}</span>`;
@@ -15,7 +15,7 @@ PAGES.m4 = async (v, sub) => {
    <button class="secondary" onclick="download('/api/m4/schemes/${cur.id}/export.xlsx')">导出测算表 Excel</button>` : ''}</div></div>`;
   if (!cur && sub !== 'data') { v.innerHTML = head + subtabs(M4_TABS, sub, 'm4') + `<div class="panel panel-b"><div class="empty">尚未导入数据。<br><br><button class="primary" onclick="m4ImportSample()">导入附件2 样例</button> 或 <a onclick="nav('m4','data')" class="edit">上传附件2</a></div></div>`; return; }
   v.innerHTML = head + subtabs(M4_TABS, sub, 'm4') + '<div id="m4body"></div>';
-  await ({ result: m4Result, data: m4Data, params: m4Params, versions: m4Versions, qingshi: m4Qingshi, history: m4History })[sub]($('#m4body'), cur);
+  await ({ result: m4Result, data: m4Data, params: m4Params, spec: m4Spec, versions: m4Versions, qingshi: m4Qingshi, history: m4History })[sub]($('#m4body'), cur);
 };
 
 async function m4ImportSample() { const r = await api('/api/m4/import-sample', { method: 'POST' }); toast('已导入附件2 样例'); M4.lastAlerts = r.alerts; nav('m4', 'result'); route(); }
@@ -33,6 +33,9 @@ async function m4Result(el, s) {
   const stepCols = [['J', '规模系数J', f4], ['L', '就业系数L', f4], ['N', '支小支农N', f4], ['P', '累计代偿P', f4], ['R', '当年代偿R', f4], ['T', '评价T', f4], ['U', '总系数U', f4],
     ['H', '2025符合民投H', m4n], ['V', '注册资本调整V', m4n], ['W', '第一次W', m4n], ['X', '第二次X', m4n], ['Z', '第三次Z', m4n], ['AA', '第四次AA', m4n], ['AB', '第五次AB', m4n], ['AH', '已备案占比AH', pct]];
   const wr = t.weights_normalized ? `<div class="alert error mb">【权重合计≠1】5 项权重合计 ${t.weight_sum.toFixed(4)}，已按比例归一后计算，应调整为合计=1（到「② 参数配置」修改）</div>` : '';
+  const meta = res.meta || {};
+  const miss = (res.alerts || []).filter(a => a.type === '数据缺失');
+  const metaLine = `<div class="small mb">口径版本 <b>${esc(meta.formula_spec_version || '尚未打戳')}</b> · 参数 v${esc(meta.param_version != null ? meta.param_version : res.param.version)} · 数据集 #${esc(meta.dataset_id != null ? meta.dataset_id : s.dataset_id)} · <a class="edit" onclick="nav('m4','spec')">口径说明</a>。缺系数时告警，且不算总系数 U、不算第二次调整 X。</div>`;
   const curCell = (r, k) => { const d = r[k + '_delta']; return `<td class="n"${d ? ` title="台账现值 ${m4n(r[k + '_base'])}，人工增减 ${sgn(d)}"` : ''}>${m4n(r[k])}${d ? ' <span class="pill gold">已调</span>' : ''}</td>`; };
   const op = r => `<td><a class="edit" onclick="m4Drill('${esc(r.name)}')">明细</a>${locked ? '' : `<a class="edit" onclick="m4CurAdjust('${esc(r.name)}')">调整</a>`}</td>`;
   const body = pool.map(r => `<tr><td>${r.seq ?? ''}</td><td class="l" title="${esc(r.name)}">${esc(r.name)}</td>
@@ -41,7 +44,7 @@ async function m4Result(el, s) {
     ${steps ? `<td class="n">${m4n(r.AI)}</td>` : ''}${curCell(r, 'cur_regular')}${curCell(r, 'cur_mintou')}${op(r)}</tr>`).join('');
   const fbody = fixed.map(r => `<tr class="fixed"><td>${r.seq ?? ''}</td><td class="l">${esc(r.name)} <span class="pill gold">固定额度</span></td><td class="n" style="font-weight:700">${m4n(r.AC)}</td>${curCell(r, 'cur_regular')}${curCell(r, 'cur_mintou')}${op(r)}</tr>`).join('');
   const refBody = res.rows.map(r => `<tr${r.fixed ? ' class="fixed"' : ''}><td class="l">${esc(r.name)}</td><td class="n">${m4n(r.tech_quota1)}</td><td class="n">${m4n(r.tech_quota)}</td><td class="n">${m4n(r.E)}</td><td class="n">${m4n(r.F)}</td><td class="n">${m4n(r.G)}</td><td class="n">${r.Y == null ? '' : m4n(r.Y)}</td><td class="n">${m4n(r.AG)}</td></tr>`).join('');
-  el.innerHTML = wr + `<div class="note-box mb" style="margin-top:0">「初步授信额度」= 计算表 AC 列口径（权重 + 微调公式自动计算的台阶值，参考用）；「目前最新常规业务授信额度」= 申请表 C+D，「目前最新民间投资授信额度」= 申请表 F，为业务现行值，人工调整只作用于此。两者分栏、互不覆盖。<b>最终授信以请示批复为准。</b>单位：万元。</div>
+  el.innerHTML = wr + alertsHtml(miss) + metaLine + `<div class="note-box mb" style="margin-top:0">「初步授信额度」= 计算表 AC 列口径（权重 + 微调公式自动计算的台阶值，参考用）；「目前最新常规业务授信额度」= 申请表 C+D，「目前最新民间投资授信额度」= 申请表 F，为业务现行值，人工调整只作用于此。两者分栏、互不覆盖。<b>最终授信以请示批复为准。</b>单位：万元。</div>
   <div class="form-row mb" style="gap:8px;align-items:center"><button class="secondary" onclick="M4.showSteps=!M4.showSteps;route()">${steps ? '收起测算步骤' : '展开测算步骤（J~U、V、W、X、Z、AA、AB、AH、AI）'}</button>
    <button class="secondary" onclick="m4CompareExcel()">与 Excel AC 列对比</button>
    <button class="ghost" onclick="download('/api/m4/schemes/${s.id}/cur-log.xlsx')">导出调整记录</button>
@@ -147,6 +150,29 @@ function m4Mintou(name) {
   $('#mt_ok').onclick = async () => { await api(`/api/m4/schemes/${M4.scheme.id}/mintou`, { method: 'POST', json: { institution: name, q3_base: $('#mt_q').value, balance: $('#mt_b').value, rate: $('#mt_r').value } }); closeModal(); toast('已测算'); route(); };
   $('#mt_ov').onclick = async () => { const reason = $('#mt_rs').value.trim(); if (!reason) return toast('请填写原因'); await api(`/api/m4/schemes/${M4.scheme.id}/adjust`, { method: 'POST', json: { institution: name, kind: 'mintou', value: $('#mt_v').value, reason } }); closeModal(); route(); };
   $('#mt_clr').onclick = async () => { const reason = $('#mt_rs').value.trim() || '恢复按规则测算'; await api(`/api/m4/schemes/${M4.scheme.id}/adjust`, { method: 'POST', json: { institution: name, kind: 'mintou', value: '', reason } }); closeModal(); route(); };
+}
+
+const M4_POL = { null_and_alert: '告警且记空（不算 U/X）', zero: '缺省按 0', skip: '跳过，不告警' };
+async function m4Spec(el, s) {
+  const spec = await api('/api/m4/formula-spec');
+  const res = s.result || {}, meta = res.meta || {};
+  const miss = (res.alerts || []).filter(a => a.type === '数据缺失');
+  const hash = meta.calc_module_hash || '';
+  const drift = hash && spec.calc_module_hash && hash !== spec.calc_module_hash;
+  el.innerHTML = `<div class="note-box mb">${esc(spec.missing_coefficient_rule || '')}</div>
+  ${drift ? '<div class="alert warn mb">结果中的 calc.py 哈希与当前代码不一致，请重新测算后再以结果打戳为准。</div>' : ''}
+  <div class="kv mb"><div><span>公式口径版本</span><b>${esc(meta.formula_spec_version || '尚未打戳')}</b></div>
+   <div><span>参数版本</span><b>v${esc(meta.param_version != null ? meta.param_version : (res.param || {}).version)}</b></div>
+   <div><span>数据集</span><b>#${esc(meta.dataset_id != null ? meta.dataset_id : s.dataset_id)}</b></div>
+   <div><span>calc.py</span><b style="font-size:13px" title="${esc(hash)}">${esc(hash ? hash.slice(0, 12) : '—')}</b></div></div>
+  <div class="page-actions mb" style="margin-top:0">${ME.role === 'admin' ? `<button class="secondary" onclick="download('/api/m4/schemes/${s.id}/formula-spec.xlsx')">导出口径说明</button>` : ''}
+   <span class="small">${ME.role === 'admin' ? '测算表 Excel 中同样有「口径说明」工作表。' : '口径说明仅供内部查阅，导出仅系统管理员可操作。'}当前公式文件版本 ${esc(spec.version)}。</span></div>
+  <div class="panel mb"><div class="panel-head"><div><h2>本次系数缺失告警</h2><p>参与分配的机构缺系数时：告警，且不算总系数 U、不算第二次调整 X。固定额度机构不参与系数测算。</p></div></div>
+   ${miss.length ? alertsHtml(miss) : '<div class="panel-b small">当前方案没有「数据缺失」告警。</div>'}</div>
+  <div class="panel"><div class="panel-head"><div><h2>列级口径</h2><p>${esc(spec.scope || '')} ${esc(spec.weight_rule || '')}</p></div></div>
+  <div class="tbl-wrap"><table class="grid"><thead><tr><th>列</th><th>指标</th><th>白话公式</th><th>缺失时</th><th>来源</th></tr></thead><tbody>
+  ${(spec.columns || []).map(c => `<tr><td>${esc(c.id)}</td><td>${esc(c.name || '')}</td><td class="l small">${esc(c.expr_human)}</td><td class="small">${esc(M4_POL[c.missing_policy] || c.missing_policy)}</td><td class="l small">${esc(c.source)}</td></tr>`).join('')}
+  </tbody></table></div></div>`;
 }
 
 /* ---- 数据导入与基础数据 ---- */
