@@ -109,7 +109,7 @@ def cur_log_xlsx(sid):
     return bio.getvalue(), f"授信额度调整记录_v{s['version']}.xlsx"
 
 
-def scheme_xlsx(sid):
+def scheme_xlsx(sid, include_spec=False):
     s = service.get_scheme(sid)
     res = s["result"]
     wb = Workbook()
@@ -168,7 +168,8 @@ def scheme_xlsx(sid):
     ws4 = wb.create_sheet("状态记录")
     _ws_table(ws4, ["时间", "操作人", "原状态", "新状态", "备注"],
               [[x["at"], x["by"], x["from"], x["to"], x.get("remark", "")] for x in s["status_log"]], [20, 12, 10, 10, 40])
-    _formula_sheet(wb.create_sheet("口径说明"), s)
+    if include_spec:
+        _formula_sheet(wb.create_sheet("口径说明"), s)
     bio = BytesIO()
     wb.save(bio)
     return bio.getvalue(), f"授信测算_v{s['version']}.xlsx"

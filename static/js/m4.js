@@ -165,8 +165,8 @@ async function m4Spec(el, s) {
    <div><span>参数版本</span><b>v${esc(meta.param_version != null ? meta.param_version : (res.param || {}).version)}</b></div>
    <div><span>数据集</span><b>#${esc(meta.dataset_id != null ? meta.dataset_id : s.dataset_id)}</b></div>
    <div><span>calc.py</span><b style="font-size:13px" title="${esc(hash)}">${esc(hash ? hash.slice(0, 12) : '—')}</b></div></div>
-  <div class="page-actions mb" style="margin-top:0"><button class="secondary" onclick="download('/api/m4/schemes/${s.id}/formula-spec.xlsx')">导出口径说明</button>
-   <span class="small">测算表 Excel 中同样有「口径说明」工作表。当前公式文件版本 ${esc(spec.version)}。</span></div>
+  <div class="page-actions mb" style="margin-top:0">${ME.role === 'admin' ? `<button class="secondary" onclick="download('/api/m4/schemes/${s.id}/formula-spec.xlsx')">导出口径说明</button>` : ''}
+   <span class="small">${ME.role === 'admin' ? '测算表 Excel 中同样有「口径说明」工作表。' : '口径说明仅供内部查阅，导出仅系统管理员可操作。'}当前公式文件版本 ${esc(spec.version)}。</span></div>
   <div class="panel mb"><div class="panel-head"><div><h2>本次系数缺失告警</h2><p>参与分配的机构缺系数时：告警，且不算总系数 U、不算第二次调整 X。固定额度机构不参与系数测算。</p></div></div>
    ${miss.length ? alertsHtml(miss) : '<div class="panel-b small">当前方案没有「数据缺失」告警。</div>'}</div>
   <div class="panel"><div class="panel-head"><div><h2>列级口径</h2><p>${esc(spec.scope || '')} ${esc(spec.weight_rule || '')}</p></div></div>

@@ -60,10 +60,26 @@ def test_missing_coefficient_still_alerts_and_skips_u_x():
     assert any(a["type"] == "数据缺失" and "示例机构甲" in a["msg"] for a in out["alerts"])
 
 
-def test_formula_spec_export(client, imported):
+def test_formula_spec_view_internal_export_admin_only(client, imported):
+    """内部可查阅口径说明；导出（单独 xlsx 与测算表中的工作表）仅管理员。机构用户一律 403。"""
     sid = imported["scheme_id"]
     spec = load_spec()
-    r = client.get(f"/api/m4/schemes/{sid}/formula-spec.xlsx")
+    admin = {"X-Role": "admin"}
+    inst = {"X-Role": "institution"}
+
+    view = client.get("/api/m4/formula-spec")
+    assert view.status_code == 200
+    api = view.json()
+    assert api["version"] == spec["version"] and api["calc_module_hash"] == calc_module_hash()
+    assert client.get("/api/m4/formula-spec", headers=admin).status_code == 200
+
+    assert client.get("/api/m4/formula-spec", headers=inst).status_code == 403
+    assert client.get(f"/api/m4/schemes/{sid}/formula-spec.xlsx", headers=inst).status_code == 403
+    assert client.get(f"/api/m4/schemes/{sid}/export.xlsx", headers=inst).status_code == 403
+
+    assert client.get(f"/api/m4/schemes/{sid}/formula-spec.xlsx").status_code == 403
+
+    r = client.get(f"/api/m4/schemes/{sid}/formula-spec.xlsx", headers=admin)
     assert r.status_code == 200 and r.content[:2] == b"PK"
     wb = openpyxl.load_workbook(io.BytesIO(r.content))
     assert "口径说明" in wb.sheetnames
@@ -71,9 +87,14 @@ def test_formula_spec_export(client, imported):
     assert spec["version"] in text
     assert "缺系数" in text or "不算" in text
     assert "null_and_alert" in text
-    full = client.get(f"/api/m4/schemes/{sid}/export.xlsx")
-    wb2 = openpyxl.load_workbook(io.BytesIO(full.content))
-    assert "口径说明" in wb2.sheetnames
-    api = client.get("/api/m4/formula-spec").json()
-    assert api["version"] == spec["version"] and api["calc_module_hash"] == calc_module_hash()
-    assert client.get("/api/m4/formula-spec", headers={"X-Role": "institution"}).status_code == 403
+
+    full_internal = client.get(f"/api/m4/schemes/{sid}/export.xlsx")
+    assert full_internal.status_code == 200
+    wb_internal = openpyxl.load_workbook(io.BytesIO(full_internal.content))
+    assert "口径说明" not in wb_internal.sheetnames
+    assert "测算结果" in wb_internal.sheetnames
+
+    full_admin = client.get(f"/api/m4/schemes/{sid}/export.xlsx", headers=admin)
+    assert full_admin.status_code == 200
+    wb_admin = openpyxl.load_workbook(io.BytesIO(full_admin.content))
+    assert "口径说明" in wb_admin.sheetnames
