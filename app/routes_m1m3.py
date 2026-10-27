@@ -2,12 +2,12 @@
 import io
 from urllib.parse import quote
 
-from fastapi import APIRouter, Body, Depends, HTTPException
+from fastapi import APIRouter, Body, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import Response
 
 from . import db
 from .auth import current_user, require_internal
-from .m1 import collector, config as C
+from .m1 import collector, manual, config as C
 from .m1.classify import classify
 from .m1 import insights as INS
 from .m1 import validity as V
@@ -53,7 +53,7 @@ def m1_runs(view: str = "", user=Depends(internal)):
 @r.get("/m1/items")
 def m1_items(level: str = "", layer: str = "", region: str = "", kw: str = "", validity: str = "", show_dup: bool = False, limit: int = 300, user=Depends(internal)):
     sql, a = ("SELECT id,url,title,publisher,level,layer,region,topic,pub_date,snippet,summary,fetch_status,duplicate_of,level_manual,collected_at,"
-              "validity_status,effective_date,expiry_date,abolished_at,doc_no FROM m1_items WHERE 1=1", [])
+              "validity_status,effective_date,expiry_date,abolished_at,doc_no,provider,uploaded_by,source_filename FROM m1_items WHERE 1=1", [])
     if level:
         sql += " AND level IN (%s)" % ",".join("?" * len(level.split(",")))
         a += level.split(",")
@@ -169,6 +169,33 @@ def m1_summarize(iid: int, user=Depends(internal)):
     if not collector._summarize(iid):
         raise HTTPException(400, "未选择 M1 摘要模型，或条目无正文")
     return m1_item(iid, user)
+
+
+@r.post("/m1/manual/url")
+def m1_manual_url(body: dict = Body(...), user=Depends(internal)):
+    """粘贴政策链接：复用抓取、清洗、分级与要点摘要，记为同事补录。"""
+    return manual.ingest_url(body.get("url"), user, allow_title_dup=body.get("allow_title_dup"))
+
+
+@r.post("/m1/manual/preview")
+async def m1_manual_preview(file: UploadFile = File(...), user=Depends(internal)):
+    """上传 PDF / Word：抽正文并让模型预填元数据，尚不入库。"""
+    data = await file.read()
+    return manual.preview_file(file.filename or "", data, user)
+
+
+@r.post("/m1/manual/file")
+async def m1_manual_file(file: UploadFile = File(...), title: str = Form(""), publisher: str = Form(""),
+                         doc_no: str = Form(""), pub_date: str = Form(""), summary: str = Form(""),
+                         level: str = Form(""), suggested_level: str = Form(""), url: str = Form(""),
+                         allow_title_dup: str = Form(""), user=Depends(internal)):
+    """确认上传入库。人工修改过来源等级时 level_manual=1。"""
+    data = await file.read()
+    return manual.ingest_file(file.filename or "", data, user, {
+        "title": title, "publisher": publisher, "doc_no": doc_no, "pub_date": pub_date,
+        "summary": summary, "level": level, "suggested_level": suggested_level, "url": url,
+        "allow_title_dup": allow_title_dup,
+    })
 
 
 # ---------------- M3：公开资料联网检索 + 引用登记 ----------------
