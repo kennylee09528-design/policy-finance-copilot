@@ -185,17 +185,19 @@ def _reasons(it):
         r.append(f"来源等级较低（{it['level'] or '未定级'}）")
     if not it["summary"]:
         r.append("无 AI 要点")
+    if (it.get("provider") or "") == "manual":
+        r.append("同事补录，待人工复核")
     return r
 
 
 def review_queue(limit=200):
-    rows = db.q(f"SELECT id,title,url,publisher,level,pub_date,fetch_status,summary,level_manual,collected_at FROM m1_items "
+    rows = db.q(f"SELECT id,title,url,publisher,level,pub_date,fetch_status,summary,level_manual,collected_at,provider,uploaded_by FROM m1_items "
                 f"WHERE {LIVE} AND reviewed_at IS NULL ORDER BY id DESC LIMIT 3000")
     out = []
     for it in rows:
         rs = _reasons(it)
         if rs:
-            out.append({k: it[k] for k in ("id", "title", "url", "publisher", "level", "pub_date", "fetch_status", "collected_at")} | {"reasons": rs, "score": len(rs)})
+            out.append({k: it[k] for k in ("id", "title", "url", "publisher", "level", "pub_date", "fetch_status", "collected_at", "uploaded_by")} | {"reasons": rs, "score": len(rs)})
     out.sort(key=lambda x: -x["score"])
     done = db.q1("SELECT COUNT(*) n FROM m1_items WHERE reviewed_at IS NOT NULL")["n"]
     return {"queue": out[:limit], "total": len(out), "reviewed": done}

@@ -104,7 +104,8 @@ CREATE TABLE IF NOT EXISTS m1_items(
   validity_status TEXT DEFAULT '未知', -- 现行有效 / 已废止 / 已失效 / 未知（人工核定）
   effective_date TEXT, expiry_date TEXT, abolished_at TEXT,
   superseded_by TEXT, doc_no TEXT, validity_note TEXT,
-  validity_updated_at TEXT, validity_updated_by TEXT
+  validity_updated_at TEXT, validity_updated_by TEXT,
+  uploaded_by TEXT, source_filename TEXT, source_path TEXT
 );
 CREATE TABLE IF NOT EXISTS m1_runs(
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -307,6 +308,9 @@ MIGRATIONS = [  # 旧库增量加列（已存在则忽略）
     "ALTER TABLE m1_items ADD COLUMN validity_updated_at TEXT",
     "ALTER TABLE m1_items ADD COLUMN validity_updated_by TEXT",
     "ALTER TABLE institutions ADD COLUMN all_access INTEGER DEFAULT 0",  # 1=全机构可见的业务机构（如再担保本部），不参与 M4/M5 合作机构测算
+    "ALTER TABLE m1_items ADD COLUMN uploaded_by TEXT",
+    "ALTER TABLE m1_items ADD COLUMN source_filename TEXT",
+    "ALTER TABLE m1_items ADD COLUMN source_path TEXT",
 ]
 
 ALL_ACCESS_ORGS = [("示例省级融资再担保有限责任公司", "示例再担保公司")]

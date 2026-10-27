@@ -11,11 +11,20 @@ async function api(path, opt = {}) {
   const r = await fetch(path, Object.assign({}, opt, { headers, credentials: 'same-origin' }));
   if (!r.ok) {
     let msg = r.status + '';
-    try { const j = await r.json(); msg = typeof j.detail === 'string' ? j.detail : JSON.stringify(j.detail); } catch (e) {}
+    let detail = null;
+    try {
+      const j = await r.json();
+      detail = j.detail;
+      if (detail && typeof detail === 'object' && detail.message) msg = String(detail.message);
+      else msg = typeof detail === 'string' ? detail : JSON.stringify(detail);
+    } catch (e) {}
+    const err = new Error(msg);
+    err.detail = detail;
+    err.status = r.status;
     const needLogin = r.status === 401 || r.headers.get('X-App-Auth') === 'login-required';
-    if (!opt.quiet && (needLogin || (r.status === 403 && /修改密码/.test(msg))) && !path.startsWith('/api/auth/') && !path.startsWith('/api/admin/')) { initIdentity(); throw new Error(msg); }
+    if (!opt.quiet && (needLogin || (r.status === 403 && /修改密码/.test(msg))) && !path.startsWith('/api/auth/') && !path.startsWith('/api/admin/')) { initIdentity(); throw err; }
     if (!opt.quiet) toast('⚠ ' + msg, 4000);
-    throw new Error(msg);
+    throw err;
   }
   const ct = r.headers.get('content-type') || '';
   return ct.includes('json') ? r.json() : r;
@@ -267,7 +276,7 @@ PAGES.m1 = async (v, sub) => {
   const [d, exp] = await Promise.all([api('/api/m1/items?' + q), api('/api/m1/expiring?limit=30')]);
   const lastRun = runs.runs[0];
   v.innerHTML = `<div class="page-head"><div><h1>财金协同知识库（M1）</h1><p>搜索驱动采集：按「查询模板 × 主题 × 地域（国家 / 31 省 / 重点城市 / 广东各地市）」调用联网搜索 → 仅保留权威发布方（A1/A2/B1 等，规则可在系统管理中编辑）→ 抓取正文 → AI 要点摘要。</p></div>
-   <div class="page-actions"><button class="primary" onclick="m1Run()" ${runs.running ? 'disabled' : ''}>${runs.running ? '采集中…' : '立即采集一轮'}</button></div></div>
+   <div class="page-actions"><button class="secondary" onclick="nav('m1','manual')">补录政策</button><button class="primary" onclick="m1Run()" ${runs.running ? 'disabled' : ''}>${runs.running ? '采集中…' : '立即采集一轮'}</button></div></div>
   ${M1_TABS.length ? subtabs(M1_TABS.map(x => [x[0], x[1]]), 'collect', 'm1') : ''}
   ${typeof codeLegendHtml === 'function' ? codeLegendHtml('level') : ''}
   ${await modelPicker('m1', [['extract', '要点摘要/抽取'], ['embed', '语义检索向量模型（可选）']])}
@@ -285,7 +294,7 @@ PAGES.m1 = async (v, sub) => {
    <select class="in" id="f_val"><option value="">全部效力</option>${[['expiring', '即将到期（90天内）'], ['abolished', '已废止'], ['现行有效', '现行有效'], ['已失效', '已失效'], ['未知', '未知']].map(([k, n]) => `<option value="${k}" ${f.validity === k ? 'selected' : ''}>${n}</option>`).join('')}</select>
    <input class="in" id="f_kw" placeholder="关键词" value="${esc(f.kw || '')}"><button class="secondary mini" onclick="M1F={level:$('#f_lv').value,layer:$('#f_ly').value,kw:$('#f_kw').value,validity:$('#f_val').value};route()">筛选</button></div></div>
   <div class="tbl-wrap"><table class="grid"><thead><tr><th>等级</th><th>效力</th><th>标题</th><th>发布方</th><th>发布日期</th><th>层级/地域</th><th>主题</th><th>正文</th><th>要点</th><th></th></tr></thead><tbody>
-  ${d.items.map(i => `<tr><td><span class="pill ${i.level === 'A1' ? 'red' : i.level === 'A2' ? 'gold' : 'blue'}">${i.level}</span>${i.level_manual ? '<span class="small">✎</span>' : ''}</td><td>${VAL_PILL(i.validity_status)}</td><td class="l" style="max-width:380px">${M1LINK(i.url, i.title)}</td>
+  ${d.items.map(i => `<tr><td><span class="pill ${i.level === 'A1' ? 'red' : i.level === 'A2' ? 'gold' : 'blue'}">${i.level}</span>${i.level_manual ? '<span class="small">✎</span>' : ''}</td><td>${VAL_PILL(i.validity_status)}</td><td class="l" style="max-width:380px">${M1LINK(i.url, i.title)}${M1MANUAL(i)}</td>
    <td class="l">${esc(i.publisher)}</td><td>${esc(i.pub_date || '—')}</td><td class="small">${esc(i.layer)}·${esc(i.region)}</td><td class="small">${esc(i.topic)}</td><td class="small">${esc(i.fetch_status || '')}</td><td>${i.summary ? '✓' : ''}${i.cited ? ` <a class="pill blue" style="cursor:pointer" onclick="m1Cited(${i.id})" title="被 M3 写作引用">被引用 ${i.cited}</a>` : ''}</td><td><a class="edit" onclick="m1Item(${i.id})">详情</a></td></tr>`).join('') || '<tr><td colspan="10" class="small">暂无条目</td></tr>'}
   </tbody></table></div></div>
   <div class="panel mt"><div class="panel-head"><div><h2>采集记录</h2><p>每轮采集的执行日志（归档/删除只影响记录本身，不删除已采集的知识条目）</p></div>${recTabs('m1_run')}</div>
@@ -296,6 +305,7 @@ PAGES.m1 = async (v, sub) => {
 let M1F = {};
 const M1H = (sub, desc) => `<div class="page-head"><div><h1>财金协同知识库（M1）</h1><p>${desc}</p></div></div>${subtabs(M1_TABS.map(x => [x[0], x[1]]), sub, 'm1')}`;
 const LV_PILL = l => `<span class="pill ${l === 'A1' ? 'red' : l === 'A2' ? 'gold' : 'blue'}">${esc(l || '—')}</span>`;
+const M1MANUAL = i => i && i.provider === 'manual' ? ' <span class="pill gray">补录</span>' : '';
 const VAL_PILL = s => { const t = s || '未知'; const c = t === '现行有效' ? 'green' : (t === '已废止' || t === '已失效' ? 'red' : 'gray'); return `<span class="pill ${c}">${esc(t)}</span>`; };
 async function m1Rag(q) {
   const box = $('#m1rag'); if (!box) return;
@@ -331,7 +341,7 @@ const M1X = {
      <select class="in" id="kb_val"><option value="">全部效力</option>${[['expiring', '即将到期（90天内）'], ['abolished', '已废止'], ['现行有效', '现行有效'], ['已失效', '已失效'], ['未知', '未知']].map(([k, n]) => `<option value="${k}" ${M1KB.val === k ? 'selected' : ''}>${n}</option>`).join('')}</select>
      <input class="in" id="kb_kw" placeholder="关键词（标题/正文）" value="${esc(M1KB.kw)}"><button class="secondary mini" id="kb_go">检索</button></div></div>
     <div class="tbl-wrap"><table class="grid"><thead><tr><th>等级</th><th>效力</th><th>标题</th><th>发布方</th><th>发布日期</th><th>层级/地域</th><th></th></tr></thead><tbody>
-    ${d.items.map(i => `<tr><td>${LV_PILL(i.level)}</td><td>${VAL_PILL(i.validity_status)}</td><td class="l" style="max-width:480px">${M1LINK(i.url, i.title)}</td><td class="l">${esc(i.publisher)}</td><td>${esc(i.pub_date || '—')}</td><td class="small">${esc(i.layer)}·${esc(i.region)}</td>
+    ${d.items.map(i => `<tr><td>${LV_PILL(i.level)}</td><td>${VAL_PILL(i.validity_status)}</td><td class="l" style="max-width:480px">${M1LINK(i.url, i.title)}${M1MANUAL(i)}</td><td class="l">${esc(i.publisher)}</td><td>${esc(i.pub_date || '—')}</td><td class="small">${esc(i.layer)}·${esc(i.region)}</td>
      <td style="white-space:nowrap"><a class="edit" onclick="m1KbToggle(${i.id},this)">展开</a><a class="edit" onclick="m1Item(${i.id})">详情</a></td></tr><tr style="display:none"><td colspan="7" class="l"></td></tr>`).join('') || '<tr><td colspan="7" class="small">暂无条目</td></tr>'}</tbody></table></div></div>`;
     const go = () => { M1KB.ly = $('#kb_ly').value; M1KB.kw = $('#kb_kw').value.trim(); M1KB.val = $('#kb_val').value; route(); };
     $('#kb_go').onclick = go; $('#kb_kw').onkeydown = e => { if (e.key === 'Enter') go(); };
@@ -358,10 +368,10 @@ const M1X = {
   },
   async review(v) {
     const d = await api('/api/m1/review');
-    v.innerHTML = M1H('review', '自动挑出“低置信度”条目：正文未抓到、缺发布日期/发布方、来源等级低、无 AI 要点。人工确认、改等级或标记为重复后移出队列，全程留痕。') + `
+    v.innerHTML = M1H('review', '自动挑出“低置信度”条目：正文未抓到、缺发布日期/发布方、来源等级低、无 AI 要点。同事补录的条目也会留在这里，直到人工确认。确认、改等级或标记为重复后移出队列，全程留痕。') + `
     <div class="kv mb"><div><span>待复核</span><b>${d.total}</b></div><div><span>已复核</span><b>${d.reviewed}</b></div></div>
     <div class="panel"><div class="tbl-wrap"><table class="grid"><thead><tr><th>等级</th><th>标题</th><th>发布方</th><th>发布日期</th><th>原因</th><th>复核</th></tr></thead><tbody>
-    ${d.queue.map(x => `<tr><td>${LV_PILL(x.level)}</td><td class="l" style="max-width:420px"><a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.title || x.url)}</a></td><td class="l">${esc(x.publisher || '—')}</td><td>${esc(x.pub_date || '—')}</td>
+    ${d.queue.map(x => `<tr><td>${LV_PILL(x.level)}</td><td class="l" style="max-width:420px">${M1LINK(x.url, x.title)}${x.uploaded_by ? `<div class="small">补录人：${esc(x.uploaded_by)}</div>` : ''}</td><td class="l">${esc(x.publisher || '—')}</td><td>${esc(x.pub_date || '—')}</td>
      <td class="small l">${x.reasons.map(r => `<span class="pill gold">${esc(r)}</span>`).join(' ')}</td>
      <td style="white-space:nowrap"><a class="edit" onclick="m1Rev(${x.id},'confirm')">确认无误</a><select class="in" style="width:70px;padding:2px" onchange="this.value&&m1Rev(${x.id},'level',this.value)"><option value="">改等级</option>${['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].map(l => `<option>${l}</option>`).join('')}</select><a class="edit" onclick="m1Rev(${x.id},'duplicate')">标记重复</a><a class="edit" onclick="m1Item(${x.id})">详情</a></td></tr>`).join('') || '<tr><td colspan="6" class="small">队列为空 👍</td></tr>'}</tbody></table></div></div>`;
   },
@@ -373,6 +383,50 @@ const M1X = {
     ${d.sample.map(x => `<tr><td class="l" style="max-width:420px"><a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.title)}</a><br><span class="small">${esc(x.publisher || '')} · ${esc(x.pub_date || '')}</span></td>
      <td class="l" style="max-width:420px"><a href="${esc(x.o_url)}" target="_blank" rel="noopener noreferrer">${esc(x.o_title)}</a><br><span class="small">${esc(x.o_publisher || '')} · ${esc(x.o_pub_date || '')}</span></td>
      <td style="white-space:nowrap"><button class="secondary mini" onclick="m1Dedup(${x.id},'correct',this)">确实重复</button> <button class="ghost mini" onclick="m1Dedup(${x.id},'wrong',this)">误判</button></td></tr>`).join('') || '<tr><td colspan="3" class="small">没有待抽检的判重条目</td></tr>'}</tbody></table></div></div>`;
+  },
+  async manual(v) {
+    const picker = await modelPicker('m1', [['extract', '要点摘要/抽取（链接摘要与文件预填）'], ['embed', '语义检索向量模型（可选）']]);
+    const tab = M1MAN.tab === 'file' ? 'file' : 'url';
+    const f = M1MAN.fields || {};
+    const s = M1MAN.sugg || {};
+    const val = k => (f[k] != null && f[k] !== '') ? f[k] : (s[k] || '');
+    const levels = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+    const lv = val('level');
+    v.innerHTML = M1H('manual', '内部同事自行补录政策。链接走现有抓取、清洗、分级和要点摘要；PDF / Word 先抽正文，再由模型预填元数据，可改后入库。效力默认为「未知」，成功后进入列表和待复核。') + picker + `
+    <div class="subtabs">
+      <button class="${tab === 'url' ? 'active' : ''}" onclick="m1ManualRead();M1MAN.tab='url';route()">粘贴链接</button>
+      <button class="${tab === 'file' ? 'active' : ''}" onclick="m1ManualRead();M1MAN.tab='file';route()">上传文件</button>
+    </div>
+    ${tab === 'url' ? `<div class="panel"><div class="panel-head"><div><h2>粘贴政策链接</h2><p>只采集这一条，不跑整轮搜索。重复链接会拒绝并告知已有条目编号。PDF 链接不解析正文，请改用上传文件。</p></div></div>
+      <div class="form-row"><label style="flex:1">政策原文链接<input class="in" id="mu_url" placeholder="https://" value="${esc(M1MAN.url || '')}"></label></div>
+      <div class="form-row"><label><span><input type="checkbox" id="mu_allow" ${M1MAN.allowUrl ? 'checked' : ''}> 标题相同仍入库（标记为疑似重复，默认列表不显示）</span></label>
+      <button class="primary" id="mu_go">采集并入库</button></div></div>` : `<div class="panel"><div class="panel-head"><div><h2>上传 PDF 或 Word</h2><p>支持 .pdf 与 .docx。扫描件若抽不出文字会直接失败，不会当成成功。请先在上方选择「要点摘要」模型；未配置时仍可手工填写。</p></div></div>
+      ${M1MAN.llmWarning ? `<div class="alert warn mb">${esc(M1MAN.llmWarning)}</div>` : ''}
+      <div class="form-row"><label>文件<input class="in" id="mf_file" type="file" accept=".pdf,.docx,application/pdf"></label>
+      <span class="small" id="mf_name">${M1MAN.fileName ? '已选：' + esc(M1MAN.fileName) : '未选择文件'}</span>
+      <button class="secondary" id="mf_preview">解析并预填</button></div>
+      <div class="form-row"><label style="flex:1">标题<input class="in" id="mf_title" value="${esc(val('title'))}"></label>
+      <label style="flex:1">发布机构<input class="in" id="mf_pub" value="${esc(val('publisher'))}"></label></div>
+      <div class="form-row"><label>文号<input class="in" id="mf_doc" value="${esc(val('doc_no'))}"></label>
+      <label>发布日期<input class="in" id="mf_date" type="date" value="${esc(val('pub_date'))}"></label>
+      <label>来源等级<select class="in" id="mf_lv"><option value="">请选择</option>${levels.map(l => `<option ${l === lv ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      ${s.level ? `<span class="small">模型建议 ${esc(s.level)}；若改选其他等级，将记为人工覆盖</span>` : ''}</div>
+      <div class="form-row"><label style="flex:1">要点<textarea class="in" id="mf_sum" style="min-height:90px">${esc(val('summary'))}</textarea></label></div>
+      <div class="form-row"><label style="flex:1">原文链接（可选，用于去重）<input class="in" id="mf_url" placeholder="https://" value="${esc(val('url'))}"></label></div>
+      <div class="form-row"><label><span><input type="checkbox" id="mf_allow" ${M1MAN.allowFile ? 'checked' : ''}> 标题相同仍入库（标记为疑似重复，默认列表不显示）</span></label>
+      <button class="primary" id="mf_go">确认入库</button></div>
+      ${M1MAN.previewText ? `<h3 class="small">正文预览（已清洗，共 ${M1MAN.chars || M1MAN.previewText.length} 字）</h3><div class="small" style="white-space:pre-wrap;max-height:220px;overflow:auto;background:var(--bg);padding:8px;border-radius:8px">${esc(M1MAN.previewText)}</div>` : ''}
+    </div>`}`;
+    if ($('#mu_go')) $('#mu_go').onclick = () => m1ManualUrl();
+    if ($('#mu_url')) $('#mu_url').onkeydown = e => { if (e.key === 'Enter') m1ManualUrl(); };
+    if ($('#mf_file')) $('#mf_file').onchange = () => {
+      M1MAN_FILE = $('#mf_file').files[0] || null;
+      M1MAN.fileName = M1MAN_FILE ? M1MAN_FILE.name : '';
+      M1MAN.sugg = null; M1MAN.previewText = ''; M1MAN.llmWarning = ''; M1MAN.fields = {}; M1MAN.chars = 0;
+      route();
+    };
+    if ($('#mf_preview')) $('#mf_preview').onclick = () => m1ManualPreview();
+    if ($('#mf_go')) $('#mf_go').onclick = () => m1ManualSave();
   },
 };
 async function m1Rev(id, action, level) {
@@ -387,11 +441,61 @@ async function m1Cited(id) {
   openModal('被引用情况', `<p class="small mb">该条目在 M3 引用来源登记表中被登记 ${rows.length} 次：</p><table class="grid"><thead><tr><th>文稿</th><th>写作任务</th><th>位置</th><th>核验</th><th>时间</th></tr></thead><tbody>
   ${rows.map(r => `<tr><td class="l">${esc(r.doc_name || '')}</td><td class="l">${r.task_id ? `<a class="edit" onclick="closeModal();M3T.id=${r.task_id};nav('m3')">#${r.task_id} ${esc(r.task_title || '')}</a>` : '—'}</td><td class="small">${esc(r.location || '')}</td><td class="small">${esc(r.verify_status || '')}</td><td class="small">${esc(r.created_at || '')}</td></tr>`).join('')}</tbody></table>`);
 }
-const M1_TABS = [['collect', '搜索采集', ''], ['semantic', '语义检索', ''], ['health', '来源健康', ''], ['review', '待复核', ''], ['dedup', '去重抽检', ''], ['kb', '政策知识库', '']];
+const M1_TABS = [['collect', '搜索采集', ''], ['manual', '补录政策', ''], ['semantic', '语义检索', ''], ['health', '来源健康', ''], ['review', '待复核', ''], ['dedup', '去重抽检', ''], ['kb', '政策知识库', '']];
 async function m1Run() { await api('/api/m1/run', { method: 'POST' }); toast('采集已开始，完成后刷新查看'); setTimeout(route, 1500); }
+let M1MAN = { tab: 'url', url: '', allowUrl: false, allowFile: false, fileName: '', sugg: null, fields: {}, llmWarning: '', previewText: '', chars: 0 };
+let M1MAN_FILE = null;
+function m1ManualRead() {
+  if ($('#mu_url')) { M1MAN.url = $('#mu_url').value; M1MAN.allowUrl = $('#mu_allow').checked; }
+  if ($('#mf_title')) {
+    M1MAN.fields = { title: $('#mf_title').value, publisher: $('#mf_pub').value, doc_no: $('#mf_doc').value, pub_date: $('#mf_date').value, summary: $('#mf_sum').value, level: $('#mf_lv').value, url: $('#mf_url').value };
+    M1MAN.allowFile = $('#mf_allow').checked;
+  }
+}
+function m1ManualDone(r) {
+  const warn = (r && r.warning) || '';
+  toast(warn || '已补录，已进入待复核', 4000);
+  const dup = r && r.item && r.item.duplicate_of;
+  M1MAN.sugg = null; M1MAN.fields = {}; M1MAN.previewText = ''; M1MAN.llmWarning = ''; M1MAN.fileName = ''; M1MAN.chars = 0; M1MAN_FILE = null;
+  if (dup) route(); else nav('m1', 'review');
+}
+async function m1ManualUrl() {
+  m1ManualRead();
+  const r = await api('/api/m1/manual/url', { method: 'POST', json: { url: (M1MAN.url || '').trim(), allow_title_dup: !!M1MAN.allowUrl } });
+  m1ManualDone(r);
+}
+async function m1ManualPreview() {
+  m1ManualRead();
+  if (!M1MAN_FILE) { toast('请先选择 PDF 或 Word（.docx）'); return; }
+  const keepUrl = (M1MAN.fields || {}).url || '';
+  const fd = new FormData(); fd.append('file', M1MAN_FILE);
+  const r = await api('/api/m1/manual/preview', { method: 'POST', body: fd });
+  M1MAN.sugg = r.suggestions || {};
+  M1MAN.fields = Object.assign({ url: keepUrl }, r.suggestions || {});
+  M1MAN.llmWarning = r.llm_warning || '';
+  M1MAN.previewText = r.text || '';
+  M1MAN.chars = r.chars || 0;
+  M1MAN.tab = 'file';
+  route();
+}
+async function m1ManualSave() {
+  m1ManualRead();
+  if (!M1MAN_FILE) { toast('请先选择 PDF 或 Word（.docx）'); return; }
+  const f = M1MAN.fields || {};
+  const fd = new FormData();
+  fd.append('file', M1MAN_FILE);
+  const suggLv = (M1MAN.sugg || {}).level || '';
+  for (const [k, v] of Object.entries({ title: f.title, publisher: f.publisher, doc_no: f.doc_no, pub_date: f.pub_date, summary: f.summary, level: f.level, url: f.url, suggested_level: suggLv, allow_title_dup: M1MAN.allowFile ? 'true' : 'false' })) fd.append(k, v || '');
+  const r = await api('/api/m1/manual/file', { method: 'POST', body: fd });
+  m1ManualDone(r);
+}
 async function m1Item(id) {
   const i = await api('/api/m1/items/' + id);
-  openModal('#' + i.id + ' ' + (i.title || '条目'), `<p class="small mb"><a href="${esc(i.url)}" target="_blank" rel="noopener noreferrer">${esc(i.url)}</a><br>发布方：${esc(i.publisher)} · 发布日期：${esc(i.pub_date || '—')} · 检索词：${esc(i.query)} · 搜索：${esc(i.provider)} · 采集：${esc(i.collected_at)}</p>
+  const urlLine = /^https?:\/\//.test(i.url || '') ? `<a href="${esc(i.url)}" target="_blank" rel="noopener noreferrer">${esc(i.url)}</a>` : '暂无原文链接';
+  const who = i.provider === 'manual'
+    ? `同事补录${i.uploaded_by ? ' · 上传人 ' + esc(i.uploaded_by) : ''}${i.source_filename ? ' · 原文件 ' + esc(i.source_filename) : ''}`
+    : `检索词：${esc(i.query)} · 搜索：${esc(i.provider)}`;
+  openModal('#' + i.id + ' ' + (i.title || '条目'), `<p class="small mb">${urlLine}<br>发布方：${esc(i.publisher)} · 发布日期：${esc(i.pub_date || '—')} · ${who} · 采集：${esc(i.collected_at)}</p>
   <div class="note-box mb"><b>政策效力</b>（人工核定，不自动抽取失效日）${i.validity_notice ? `<br><b>${esc(i.validity_notice)}</b>` : '<br>现行有效'}
   ${i.validity_updated_at ? `<br><span class="small">上次核定：${esc(i.validity_updated_by || '')} ${esc(i.validity_updated_at)}</span>` : ''}</div>
   <div class="form-row"><label>效力状态<select class="in" id="it_vs">${['现行有效', '已废止', '已失效', '未知'].map(s => `<option ${(i.validity_status || '未知') === s ? 'selected' : ''}>${s}</option>`).join('')}</select></label>
