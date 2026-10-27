@@ -409,7 +409,7 @@ const M1X = {
       <label style="flex:1">发布机构<input class="in" id="mf_pub" value="${esc(val('publisher'))}"></label></div>
       <div class="form-row"><label>文号<input class="in" id="mf_doc" value="${esc(val('doc_no'))}"></label>
       <label>发布日期<input class="in" id="mf_date" type="date" value="${esc(val('pub_date'))}"></label>
-      <label>来源等级<select class="in" id="mf_lv"><option value="">请选择</option>${levels.map(l => `<option ${l === lv ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      <label>来源等级<select class="in" id="mf_lv"><option value="">请选择</option>${levels.map(l => `<option value="${l}" ${l === lv ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       ${s.level ? `<span class="small">模型建议 ${esc(s.level)}；若改选其他等级，将记为人工覆盖</span>` : ''}</div>
       <div class="form-row"><label style="flex:1">要点<textarea class="in" id="mf_sum" style="min-height:90px">${esc(val('summary'))}</textarea></label></div>
       <div class="form-row"><label style="flex:1">原文链接（可选，用于去重）<input class="in" id="mf_url" placeholder="https://" value="${esc(val('url'))}"></label></div>

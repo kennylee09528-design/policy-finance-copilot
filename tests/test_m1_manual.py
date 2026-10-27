@@ -127,9 +127,13 @@ def test_url_ingest_reuses_pipeline_and_rejects_duplicate(client, monkeypatch):
     assert item["id"] in visible and dup_item["id"] not in visible
     shown = [x["id"] for x in client.get("/api/m1/items", params={"kw": "示例补录甲号", "show_dup": True}).json()["items"]]
     assert dup_item["id"] in shown
-    assert client.post("/api/m1/manual/url", json={"url": "http://127.0.0.1/secret"}, headers=H_IN).status_code == 400
-    assert "内网" in client.post("/api/m1/manual/url", json={"url": "http://127.0.0.1/secret"}, headers=H_IN).json()["detail"]
+
+
+def test_manual_url_rejects_intranet_and_non_http(client):
+    denied = client.post("/api/m1/manual/url", json={"url": "http://127.0.0.1/secret"}, headers=H_IN)
+    assert denied.status_code == 400 and "内网" in denied.json()["detail"]
     assert client.post("/api/m1/manual/url", json={"url": "ftp://manual.example/a"}, headers=H_IN).status_code == 400
+    assert client.post("/api/m1/manual/url", json={"url": "  "}, headers=H_IN).status_code == 400
 
 
 def test_url_pdf_warns_and_summary_failure_keeps_item(client, monkeypatch):
