@@ -4,11 +4,11 @@
 
 ## 许可证 / License
 
-> **本项目自本次提交起采用 PolyForm Noncommercial 1.0.0 许可证；禁止任何商业用途（包括但不限于商业部署、销售、作为收费服务提供、在营利性机构内部用于生产经营）；如需商用须事先获得作者 xiao sun 的书面授权；版权所有 © 2026 xiao sun。**
+> **本项目自本次提交起采用 PolyForm Noncommercial 1.0.0 许可证；禁止任何商业用途（包括但不限于商业部署、销售、作为收费服务提供、在营利性机构内部用于生产经营）；如需商用须事先获得作者 Kenny 的书面授权；版权所有 © 2026 Kenny。**
 >
 > 许可变更日期：**2026-11-04**。该许可证适用于本次提交及之后的版本。全文见 [LICENSE](LICENSE)（SPDX：`PolyForm-Noncommercial-1.0.0`）。
 >
-> **Starting with this commit, this project is licensed under the PolyForm Noncommercial License 1.0.0. Any commercial use is prohibited (including but not limited to commercial deployment, sale, offering the software as a paid service, and use inside a for-profit organization for production or business operations). Commercial use requires prior written authorization from the author, xiao sun. Copyright © 2026 xiao sun.**
+> **Starting with this commit, this project is licensed under the PolyForm Noncommercial License 1.0.0. Any commercial use is prohibited (including but not limited to commercial deployment, sale, offering the software as a paid service, and use inside a for-profit organization for production or business operations). Commercial use requires prior written authorization from the author, Kenny. Copyright © 2026 Kenny.**
 >
 > License change date: **2026-11-04**. This license applies to this version and all later versions. Full text: [LICENSE](LICENSE) (SPDX: `PolyForm-Noncommercial-1.0.0`).
 
@@ -76,4 +76,4 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 
 ## 许可证
 
-自 **2026-11-04** 起，本次提交及之后的版本采用 [PolyForm Noncommercial 1.0.0](LICENSE)（SPDX：`PolyForm-Noncommercial-1.0.0`）。禁止任何商业用途；商用须事先获得作者 xiao sun 的书面授权。版权所有 © 2026 xiao sun。详见文首「许可证 / License」。
+自 **2026-11-04** 起，本次提交及之后的版本采用 [PolyForm Noncommercial 1.0.0](LICENSE)（SPDX：`PolyForm-Noncommercial-1.0.0`）。禁止任何商业用途；商用须事先获得作者 Kenny 的书面授权。版权所有 © 2026 Kenny。详见文首「许可证 / License」。
