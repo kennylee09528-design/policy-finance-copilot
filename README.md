@@ -2,6 +2,16 @@
 
 面向政策性金融 / 政府性融资担保与再担保机构的 **AI 行业研究 + 业务工作台**：政策资讯采集与知识库、每日简报、研究报告写作、机构授信测算、额度看板，并提供微信 / 飞书机器人与 PPT 自动生成。
 
+## 许可证 / License
+
+> **本项目自本次提交起采用 PolyForm Noncommercial 1.0.0 许可证；禁止任何商业用途（包括但不限于商业部署、销售、作为收费服务提供、在营利性机构内部用于生产经营）；如需商用须事先获得作者 xiao sun 的书面授权；版权所有 © 2026 xiao sun。**
+>
+> 许可变更日期：**2026-11-04**。该许可证适用于本次提交及之后的版本。全文见 [LICENSE](LICENSE)（SPDX：`PolyForm-Noncommercial-1.0.0`）。
+>
+> **Starting with this commit, this project is licensed under the PolyForm Noncommercial License 1.0.0. Any commercial use is prohibited (including but not limited to commercial deployment, sale, offering the software as a paid service, and use inside a for-profit organization for production or business operations). Commercial use requires prior written authorization from the author, xiao sun. Copyright © 2026 xiao sun.**
+>
+> License change date: **2026-11-04**. This license applies to this version and all later versions. Full text: [LICENSE](LICENSE) (SPDX: `PolyForm-Noncommercial-1.0.0`).
+
 > ⚠️ **示例数据均为虚构**。`samples/` 中的机构名称（如「示例A融资担保有限公司」「示例省级融资再担保有限责任公司」）、台账与额度均为演示用途，不对应任何真实机构或真实业务。
 >
 > 示例场景：某省级再担保公司的再担保业务条线（仅作场景说明）。
@@ -66,4 +76,4 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 
 ## 许可证
 
-[MIT](LICENSE) © 2026 xiao sun
+自 **2026-11-04** 起，本次提交及之后的版本采用 [PolyForm Noncommercial 1.0.0](LICENSE)（SPDX：`PolyForm-Noncommercial-1.0.0`）。禁止任何商业用途；商用须事先获得作者 xiao sun 的书面授权。版权所有 © 2026 xiao sun。详见文首「许可证 / License」。
