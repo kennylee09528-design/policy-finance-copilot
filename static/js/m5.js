@@ -1,11 +1,11 @@
 /* 机构看板（M5） */
 const M5 = { sid: null, d: null, charts: [] };
 const PORT_NAMES = { regular: '常规业务', tech: '科技创新专项', private: '民间投资专项', t2t: '总对总' };
-const M5_TABS = [['summary', '额度使用汇总'], ['inst', '分机构使用情况'], ['charts', '图表分析'], ['rules', '预警规则']];  // 「数据导入」页签按 PRD 1018 红线划掉已下线（后端接口与 m5Import 保留）
+const M5_TABS = [['summary', '额度使用汇总'], ['inst', '分机构使用情况'], ['charts', '图表分析'], ['import', '数据导入'], ['rules', '预警规则']];
 
 PAGES.m5 = async (v, sub) => {
   const isInst = ident().role === 'institution';
-  if (sub === 'limits' || sub === 'import') sub = 'summary'; // 授信额度表页签已下线（后端与数据保留，看板计算仍依赖）
+  if (sub === 'limits') sub = 'summary'; // 授信额度表页签已下线（后端与数据保留，看板计算仍依赖）
   sub = isInst ? 'inst' : (sub || 'summary');
   const snaps = await api('/api/m5/snapshots');
   if (!M5.sid || !snaps.find(s => s.id === M5.sid)) M5.sid = snaps[0] && snaps[0].id;
@@ -16,7 +16,7 @@ PAGES.m5 = async (v, sub) => {
   ${M5.sid && !['import', 'limits', 'rules'].includes(sub) ? `<button class="secondary" onclick="m5Pdf()">导出 PDF 快照</button>` : ''}</div></div>`;
   const tabs = isInst ? [['inst', '本机构额度使用情况']] : M5_TABS;
   if (!M5.sid && !['import', 'limits', 'rules'].includes(sub)) {
-    v.innerHTML = head + subtabs(tabs, sub, 'm5') + `<div class="panel panel-b"><div class="empty">尚无看板快照。${isInst ? '' : `<br><br><button class="primary" onclick="m5Sample()">一键导入样例（9月19日额度表 + 四端口台账）</button>`}</div></div>`; return;
+    v.innerHTML = head + subtabs(tabs, sub, 'm5') + `<div class="panel panel-b"><div class="empty">尚无看板快照。${isInst ? '' : `<br><br><button class="primary" onclick="m5Sample()">一键导入样例（9月19日额度表 + 四端口台账）</button> 或 <a onclick="nav('m5','import')" class="edit">上传台账</a>`}</div></div>`; return;
   }
   const d = M5.sid && !['import', 'limits', 'rules'].includes(sub) ? await api(`/api/m5/snapshots/${M5.sid}/dashboard`) : null;
   M5.d = d;
