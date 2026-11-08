@@ -251,6 +251,7 @@ PAGES.home = async v => {
     <div class="panel"><div class="panel-head"><div><h2>快捷入口</h2></div></div>
       <div class="quick-grid">
         <button onclick="nav('m4','data')"><b>⇪</b><span>导入附件2</span></button>
+        <button onclick="nav('m5','import')"><b>⇪</b><span>上传国担台账</span></button>
         <button onclick="nav('m4','qingshi')"><b>✎</b><span>生成请示</span></button>
         <button onclick="nav('m2')"><b>⌁</b><span>今日简报</span></button>
         <button onclick="nav('ppt')"><b>▣</b><span>生成汇报 PPT</span></button>

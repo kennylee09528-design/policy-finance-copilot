@@ -9,7 +9,11 @@ from .routes_common import r as common_r
 from .routes_m4 import r as m4_r, selftest
 from .routes_m5 import r as m5_r
 
-app = FastAPI(title="普惠业务工作台 API", version="0.1.0")
+app = FastAPI(
+    title="普惠业务工作台 API",
+    version="0.1.1",
+    description="Copyright © 2026 孙潇. All rights reserved. Licensed under PolyForm Noncommercial 1.0.0; commercial use requires the author's written authorization (未经作者书面授权禁止商业使用).",
+)
 db.conn()
 app.include_router(common_r)
 app.include_router(m4_r)
